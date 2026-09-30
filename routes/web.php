@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Route;
 // Public catalog and mobile download routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/user-app', [HomeController::class, 'mobile'])->name('mobile.home');
+Route::post('/user-app/fcm-token', [HomeController::class, 'storeFcmToken'])->name('mobile.fcm-token');
 Route::get('/download/android-app', function () {
     return redirect()->to(asset('downloads/meras-user-app-v2.apk?v=' . time()))
         ->header('Cache-Control', 'no-cache, no-store, must-revalidate')

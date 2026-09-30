@@ -3,9 +3,16 @@
 @section('title', "Welcome to " . config('app.name'))
 
 @push('styles')
-    <!-- DataTables CSS -->
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
+    <!-- DataTables CSS: only the optional table view needs it, so it must not block first paint -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css"
+        media="print" onload="this.media='all'">
     <style>
+        /* Hundreds of cards are rendered; let the browser skip layout/paint for the off-screen ones. */
+        .product-grid .product-card {
+            content-visibility: auto;
+            contain-intrinsic-size: auto 230px;
+        }
+
         /* ── Catalog View Switcher ── */
         .catalog-view-switcher {
             display: inline-flex;
@@ -265,6 +272,9 @@
                     title="Click to watch the shop video and view photos" role="button" tabindex="0"
                     aria-label="Watch the shop video and view the photo gallery">
                     <img src="{{ asset('images/hero_merchandise.jpg') }}"
+                        srcset="{{ asset('images/hero_merchandise-1000.jpg') }} 1000w, {{ asset('images/hero_merchandise.jpg') }} 1536w"
+                        sizes="(max-width: 548px) calc(100vw - 48px), 500px"
+                        fetchpriority="high" decoding="async"
                         alt="Mera's Merchandise Storefront Showcase">
                     <div class="gallery-hint-badge">
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -604,10 +614,11 @@
                 </button>
                 <div class="gallery-main-img-wrapper">
                     <img id="galleryMainImg" src="" alt="Shop photo" class="gallery-main-img" hidden>
+                    {{-- Gallery media only downloads once the gallery is opened (see hydrateGalleryMedia) --}}
                     <video id="galleryMainVideo" class="gallery-main-video"
                         src="{{ asset('images/shop_video.mp4') }}"
-                        poster="{{ asset('images/shop_video_poster.jpg') }}"
-                        controls playsinline muted preload="auto" hidden>
+                        data-poster="{{ asset('images/shop_video_poster.jpg') }}"
+                        controls playsinline muted preload="none" hidden>
                         <source src="{{ asset('images/shop_video.mp4') }}" type="video/mp4">
                     </video>
                     <div class="gallery-video-status" id="galleryVideoStatus" hidden></div>
@@ -622,20 +633,20 @@
             </div>
             <div class="gallery-thumbs">
                 <div class="gallery-thumb gallery-thumb-video active" onclick="setGallerySlide(0)">
-                    <img src="{{ asset('images/shop_video_poster.jpg') }}" alt="Shop video tour">
+                    <img data-src="{{ asset('images/shop_video_poster.jpg') }}" alt="Shop video tour">
                     <span class="gallery-thumb-badge">Video</span>
                 </div>
                 <div class="gallery-thumb" onclick="setGallerySlide(1)">
-                    <img src="{{ request()->getBaseUrl() }}/images/shop_gallery_1.jpg" alt="Store interior">
+                    <img data-src="{{ request()->getBaseUrl() }}/images/shop_gallery_1.jpg" alt="Store interior">
                 </div>
                 <div class="gallery-thumb" onclick="setGallerySlide(2)">
-                    <img src="{{ request()->getBaseUrl() }}/images/shop_gallery_2.jpg" alt="School supplies display">
+                    <img data-src="{{ request()->getBaseUrl() }}/images/shop_gallery_2.jpg" alt="School supplies display">
                 </div>
                 <div class="gallery-thumb" onclick="setGallerySlide(3)">
-                    <img src="{{ request()->getBaseUrl() }}/images/shop_gallery_3.jpg" alt="Fabric and textiles">
+                    <img data-src="{{ request()->getBaseUrl() }}/images/shop_gallery_3.jpg" alt="Fabric and textiles">
                 </div>
                 <div class="gallery-thumb" onclick="setGallerySlide(4)">
-                    <img src="{{ request()->getBaseUrl() }}/images/shop_gallery_4.jpg" alt="Store front">
+                    <img data-src="{{ request()->getBaseUrl() }}/images/shop_gallery_4.jpg" alt="Store front">
                 </div>
             </div>
             <div class="gallery-dots">
@@ -649,14 +660,36 @@
     </div>
 
     @push('scripts')
-        <!-- jQuery & DataTables CDN -->
-        <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-        <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
         <script>
             let customerDataTable = null;
+            let dataTablesAssets = null;
+
+            // jQuery + DataTables only serve the optional table view, so they are fetched the
+            // first time that view is opened instead of on every catalog load.
+            function loadDataTablesAssets() {
+                if (!dataTablesAssets) {
+                    const loadScript = src => new Promise((resolve, reject) => {
+                        const script = document.createElement('script');
+                        script.src = src;
+                        script.onload = resolve;
+                        script.onerror = reject;
+                        document.head.appendChild(script);
+                    });
+                    dataTablesAssets = loadScript('https://code.jquery.com/jquery-3.7.1.min.js')
+                        .then(() => loadScript('https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js'))
+                        .catch(error => {
+                            dataTablesAssets = null; // allow a retry on the next toggle
+                            throw error;
+                        });
+                }
+                return dataTablesAssets;
+            }
 
             function initCustomerDataTable() {
-                if (window.jQuery && $.fn.DataTable && !customerDataTable) {
+                if (customerDataTable) return Promise.resolve(customerDataTable);
+
+                return loadDataTablesAssets().then(() => {
+                    if (customerDataTable) return customerDataTable;
                     customerDataTable = $('#customerProductsDataTable').DataTable({
                         responsive: true,
                         pageLength: 10,
@@ -681,7 +714,10 @@
                             { orderable: false, targets: [4] }
                         ]
                     });
-                }
+                    // Carry over any search/category picked before the table existed.
+                    filterProducts();
+                    return customerDataTable;
+                });
             }
 
             function setCatalogView(mode) {
@@ -697,10 +733,10 @@
                     tableWrapper.style.display = 'block';
                     if (btnGrid) btnGrid.classList.remove('active');
                     if (btnTable) btnTable.classList.add('active');
-                    initCustomerDataTable();
-                    if (customerDataTable) {
-                        customerDataTable.columns.adjust().draw();
-                    }
+                    // If the CDN is unreachable the plain server-rendered table still shows.
+                    initCustomerDataTable()
+                        .then(table => table.columns.adjust().draw())
+                        .catch(() => {});
                     try { localStorage.setItem('meras_catalog_view', 'table'); } catch(e){}
                 } else {
                     grid.style.display = 'grid';
@@ -903,8 +939,6 @@
             })();
             if (savedCatalogView === 'table') {
                 setCatalogView('table');
-            } else {
-                setTimeout(initCustomerDataTable, 350);
             }
 
             // Attach event listeners
@@ -982,7 +1016,22 @@
                 }
             })();
 
+            // The modal is always in the DOM (only faded out), so its thumbnails and video poster
+            // carry data-src/data-poster and are only fetched once someone opens the gallery.
+            function hydrateGalleryMedia() {
+                document.querySelectorAll('#galleryModal img[data-src]').forEach(img => {
+                    img.src = img.dataset.src;
+                    img.removeAttribute('data-src');
+                });
+                const video = document.getElementById('galleryMainVideo');
+                if (video && video.dataset.poster) {
+                    video.poster = video.dataset.poster;
+                    video.removeAttribute('data-poster');
+                }
+            }
+
             function openGallery(index) {
+                hydrateGalleryMedia();
                 galleryCurrent = index ?? 0;
                 const modal = document.getElementById('galleryModal');
                 modal.classList.add('open');

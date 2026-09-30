@@ -12,6 +12,12 @@ import com.google.firebase.messaging.RemoteMessage
 
 class MyFirebaseMessagingService : FirebaseMessagingService() {
 
+    override fun onNewToken(token: String) {
+        super.onNewToken(token)
+        // MainActivity hands it to the server the next time the store page is open
+        MainActivity.saveFcmToken(this, token)
+    }
+
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
 
@@ -22,13 +28,18 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     }
 
     private fun sendNotification(title: String, messageBody: String) {
+        // SINGLE_TOP reuses the running activity (onNewIntent) instead of restarting it and
+        // reloading the whole store; the extra takes the user to their inquiry replies.
         val intent = Intent(this, MainActivity::class.java).apply {
-            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            putExtra(MainActivity.EXTRA_OPEN_TAB, "alerts")
         }
-        
+
+        // UPDATE_CURRENT, not ONE_SHOT: every notification shares this PendingIntent, and a
+        // one-shot one went dead for all the others once any of them was tapped.
         val pendingIntent = PendingIntent.getActivity(
             this, 0, intent,
-            PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val channelId = "meras_notifications"

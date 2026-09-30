@@ -7,7 +7,10 @@
     <!-- CSS Stylesheets -->
     <link rel="stylesheet" href="{{ request()->getBaseUrl() }}/css/style.css">
     <link rel="stylesheet" href="{{ request()->getBaseUrl() }}/css/landing.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    {{-- Icon font is loaded without blocking first paint; a third-party CDN round trip must not hold up the page. --}}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
+        media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"></noscript>
 
     @php
         $isMobileApp = session('is_mobile_app', false) || (isset($_SERVER['HTTP_USER_AGENT']) && str_contains($_SERVER['HTTP_USER_AGENT'], 'MerasUserApp'));

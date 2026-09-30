@@ -256,9 +256,11 @@
                 cache: 'no-store',
                 credentials: 'omit',
                 signal: controller.signal
-            }).then(function (response) {
+            }).then(function () {
+                // Any HTTP answer proves the network is up. A CDN bot challenge (403)
+                // or a server hiccup (5xx) is not the device being offline.
                 clearTimeout(abortTimer);
-                return response.ok;
+                return true;
             }).catch(function () {
                 clearTimeout(abortTimer);
                 return false;
@@ -344,6 +346,8 @@
             });
         });
 
-        check();
+        // This page was just served, so the server is reachable; don't spend a probe
+        // on it while the page's own assets are still loading.
+        setState(navigator.onLine);
     })();
 </script>

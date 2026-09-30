@@ -1,0 +1,223 @@
+<mxfile host="app.diagrams.net" modified="2026-09-18T00:00:00.000Z" agent="Codex" version="26.0.14">
+  <diagram id="dfd-context" name="DFD Context Diagram">
+    <mxGraphModel dx="1900" dy="1250" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="1250" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="ctx_title" value="MERAS Merchandise System&#xa;Data Flow Diagram - Context Level" style="text;html=1;align=center;verticalAlign=middle;fontSize=26;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="520" y="35" width="860" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="ctx_system" value="0&#xa;MERAS Merchandise System" style="rounded=1;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=22;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=3;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="670" y="390" width="560" height="230" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ctx_visitor" value="Public Visitor" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="110" y="270" width="190" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="ctx_customer" value="Registered Customer&#xa;/ Mobile App User" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="90" y="650" width="230" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="ctx_admin" value="Admin / Staff" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="1580" y="420" width="190" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="ctx_google" value="Google OAuth&#xa;Service" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="810" y="170" width="280" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="ctx_email" value="Email Service" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="1510" y="680" width="210" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="ctx_push" value="Firebase Cloud&#xa;Messaging" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="1510" y="870" width="210" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="ctx_messenger" value="Facebook Messenger" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="760" y="910" width="380" height="80" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="ctx_flow_1" value="catalog request, inquiry form, chatbot question" style="endArrow=block;html=1;rounded=0;fontSize=13;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="ctx_visitor" target="ctx_system">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ctx_flow_2" value="product catalog, inquiry confirmation, bot reply" style="endArrow=block;html=1;rounded=0;fontSize=13;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="ctx_system" target="ctx_visitor">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ctx_flow_3" value="registration, login, chat, profile/inquiry request" style="endArrow=block;html=1;rounded=0;fontSize=13;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="ctx_customer" target="ctx_system">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ctx_flow_4" value="catalog, chat history, profile, notifications" style="endArrow=block;html=1;rounded=0;fontSize=13;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="ctx_system" target="ctx_customer">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ctx_flow_5" value="inventory updates, POS checkout, inquiry replies, settings" style="endArrow=block;html=1;rounded=0;fontSize=13;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="ctx_admin" target="ctx_system">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ctx_flow_6" value="dashboard, receipts, reports, exports, logs" style="endArrow=block;html=1;rounded=0;fontSize=13;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="ctx_system" target="ctx_admin">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ctx_flow_7" value="Google ID token" style="endArrow=block;html=1;rounded=0;fontSize=13;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="ctx_system" target="ctx_google">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ctx_flow_8" value="verified account identity" style="endArrow=block;html=1;rounded=0;fontSize=13;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="ctx_google" target="ctx_system">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ctx_flow_9" value="password reset and inquiry reply email" style="endArrow=block;html=1;rounded=0;fontSize=13;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="ctx_system" target="ctx_email">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ctx_flow_10" value="delivered email notification" style="endArrow=block;html=1;rounded=0;fontSize=13;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="ctx_email" target="ctx_customer">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ctx_flow_11" value="FCM push payload" style="endArrow=block;html=1;rounded=0;fontSize=13;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="ctx_system" target="ctx_push">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ctx_flow_12" value="mobile push notification" style="endArrow=block;html=1;rounded=0;fontSize=13;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="ctx_push" target="ctx_customer">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ctx_flow_13" value="live-chat handoff link" style="endArrow=block;html=1;rounded=0;fontSize=13;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="ctx_system" target="ctx_messenger">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="ctx_flow_14" value="real-time customer support conversation" style="endArrow=block;html=1;rounded=0;fontSize=13;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="ctx_customer" target="ctx_messenger">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="dfd-level-1" name="DFD Level 1">
+    <mxGraphModel dx="2300" dy="1600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2300" pageHeight="1600" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="lvl1_title" value="MERAS Merchandise System&#xa;Data Flow Diagram - Level 1" style="text;html=1;align=center;verticalAlign=middle;fontSize=26;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="720" y="35" width="860" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="lvl1_note" value="Legend: rectangles = external entities, rounded boxes = processes, open-ended boxes = data stores." style="text;html=1;align=center;verticalAlign=middle;fontSize=14;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="690" y="110" width="920" height="35" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e_public" value="Public Visitor&#xa;/ Mobile User" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=15;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="70" y="350" width="190" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_customer" value="Registered&#xa;Customer" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=15;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="70" y="720" width="190" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_admin" value="Admin / Staff" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=15;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="2030" y="520" width="190" height="90" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_google" value="Google OAuth" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=15;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="520" y="190" width="210" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_email" value="Email Service" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=15;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="1900" y="910" width="210" height="70" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_fcm" value="Firebase Cloud&#xa;Messaging" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=15;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="1900" y="1050" width="210" height="80" as="geometry"/>
+        </mxCell>
+        <mxCell id="e_messenger" value="Facebook Messenger" style="rounded=0;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=15;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="1250" y="1390" width="260" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="p1_auth" value="1.0&#xa;Authenticate &amp; Manage Accounts" style="rounded=1;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="430" y="330" width="260" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="p2_catalog" value="2.0&#xa;Browse Catalog &amp; Handle Inquiries" style="rounded=1;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="430" y="620" width="270" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="p3_chat" value="3.0&#xa;Chatbot &amp; Support Chat" style="rounded=1;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="870" y="620" width="260" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="p4_inventory" value="4.0&#xa;Manage Inventory" style="rounded=1;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="1420" y="300" width="250" height="115" as="geometry"/>
+        </mxCell>
+        <mxCell id="p5_pos" value="5.0&#xa;Process POS Sales" style="rounded=1;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="1420" y="570" width="250" height="115" as="geometry"/>
+        </mxCell>
+        <mxCell id="p6_reports" value="6.0&#xa;Dashboard, Reports &amp; Settings" style="rounded=1;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="1420" y="840" width="270" height="120" as="geometry"/>
+        </mxCell>
+        <mxCell id="p7_notify" value="7.0&#xa;Send Notifications &amp; Record Activity" style="rounded=1;whiteSpace=wrap;html=1;align=center;verticalAlign=middle;fontSize=16;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;arcSize=8;" vertex="1" parent="1">
+          <mxGeometry x="870" y="930" width="290" height="120" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="d1_users" value="D1  Users" style="shape=partialRectangle;right=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;fontSize=15;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="430" y="500" width="260" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="d2_products" value="D2  Products" style="shape=partialRectangle;right=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;fontSize=15;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="1420" y="450" width="260" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="d3_inquiries" value="D3  Inquiries" style="shape=partialRectangle;right=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;fontSize=15;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="430" y="800" width="260" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="d4_messages" value="D4  Messages" style="shape=partialRectangle;right=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;fontSize=15;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="870" y="800" width="260" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="d5_sales" value="D5  Sales" style="shape=partialRectangle;right=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;fontSize=15;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="1420" y="720" width="260" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="d6_sale_items" value="D6  Sale Items" style="shape=partialRectangle;right=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;fontSize=15;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="1740" y="720" width="260" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="d7_logs" value="D7  Activity Logs" style="shape=partialRectangle;right=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;fontSize=15;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="870" y="1100" width="290" height="55" as="geometry"/>
+        </mxCell>
+        <mxCell id="d8_tokens" value="D8  Sessions &amp; Password Reset Tokens" style="shape=partialRectangle;right=0;whiteSpace=wrap;html=1;align=left;verticalAlign=middle;spacingLeft=14;fontSize=15;fontStyle=1;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="430" y="220" width="320" height="55" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="f1" value="registration, login, reset request" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="e_public" target="p1_auth"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f2" value="profile access, logout" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="e_customer" target="p1_auth"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f3" value="account status, session" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p1_auth" target="e_customer"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f4" value="user record" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p1_auth" target="d1_users"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f5" value="credentials / role" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="d1_users" target="p1_auth"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f6" value="session and reset token" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p1_auth" target="d8_tokens"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f7" value="Google token" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p1_auth" target="e_google"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f8" value="verified identity" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="e_google" target="p1_auth"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="f9" value="catalog request, inquiry details, FCM token" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="e_public" target="p2_catalog"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f10" value="catalog request, profile inquiries" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="e_customer" target="p2_catalog"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f11" value="product catalog, inquiry confirmation, status" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p2_catalog" target="e_public"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f12" value="catalog and inquiry history" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p2_catalog" target="e_customer"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f13" value="available products" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="d2_products" target="p2_catalog"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f14" value="new inquiry / response status" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p2_catalog" target="d3_inquiries"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f15" value="inquiry history" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="d3_inquiries" target="p2_catalog"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="f16" value="chat message / bot question" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="e_customer" target="p3_chat"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f17" value="chatbot answer, product cards, handoff" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p3_chat" target="e_customer"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f18" value="guest chatbot question" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="e_public" target="p3_chat"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f19" value="guest bot response" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p3_chat" target="e_public"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f20" value="message history" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p3_chat" target="d4_messages"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f21" value="recent messages" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="d4_messages" target="p3_chat"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f22" value="product matches" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="d2_products" target="p3_chat"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f23" value="Messenger handoff link" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p3_chat" target="e_messenger"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="f24" value="add/update/delete product, CSV import" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="e_admin" target="p4_inventory"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f25" value="inventory list and import result" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p4_inventory" target="e_admin"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f26" value="product records and stock changes" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p4_inventory" target="d2_products"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f27" value="current inventory" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="d2_products" target="p4_inventory"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="f28" value="product search, cart changes, payment" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="e_admin" target="p5_pos"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f29" value="receipt, change, checkout status" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p5_pos" target="e_admin"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f30" value="product price and stock" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="d2_products" target="p5_pos"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f31" value="stock decrement" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p5_pos" target="d2_products"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f32" value="sale header" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p5_pos" target="d5_sales"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f33" value="sale line items" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p5_pos" target="d6_sale_items"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="f34" value="report filters, export request, user settings" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="e_admin" target="p6_reports"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f35" value="dashboard metrics, CSV export, logs view" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p6_reports" target="e_admin"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f36" value="sales totals" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="d5_sales" target="p6_reports"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f37" value="sold products" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="d6_sale_items" target="p6_reports"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f38" value="stock and category data" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="d2_products" target="p6_reports"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f39" value="user records" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="d1_users" target="p6_reports"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f40" value="account role updates" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p6_reports" target="d1_users"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f41" value="log records" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="d7_logs" target="p6_reports"><mxGeometry relative="1" as="geometry"/></mxCell>
+
+        <mxCell id="f42" value="reply email request" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p2_catalog" target="p7_notify"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f43" value="password reset email request" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p1_auth" target="p7_notify"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f44" value="activity event" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p1_auth" target="p7_notify"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f45" value="activity event" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p3_chat" target="p7_notify"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f46" value="activity event" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p4_inventory" target="p7_notify"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f47" value="activity event" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p5_pos" target="p7_notify"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f48" value="audit record" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p7_notify" target="d7_logs"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f49" value="SMTP email payload" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p7_notify" target="e_email"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f50" value="FCM push payload" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="p7_notify" target="e_fcm"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f51" value="delivered email" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="e_email" target="e_customer"><mxGeometry relative="1" as="geometry"/></mxCell>
+        <mxCell id="f52" value="mobile push" style="endArrow=block;html=1;rounded=0;fontSize=12;fontColor=#000000;strokeColor=#000000;" edge="1" parent="1" source="e_fcm" target="e_customer"><mxGeometry relative="1" as="geometry"/></mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

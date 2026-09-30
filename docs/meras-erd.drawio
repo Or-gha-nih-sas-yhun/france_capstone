@@ -1,0 +1,63 @@
+<mxfile host="app.diagrams.net" modified="2026-09-18T00:00:00.000Z" agent="Codex" version="26.0.14">
+  <diagram id="erd" name="ERD - Database Design">
+    <mxGraphModel dx="1800" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1800" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="title" value="MERAS Merchandise System&#xa;Entity Relationship Diagram (ERD)" style="text;html=1;align=center;verticalAlign=middle;fontSize=26;fontStyle=1;fontColor=#000000;" vertex="1" parent="1">
+          <mxGeometry x="470" y="30" width="860" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="users" value="&lt;b&gt;USERS&lt;/b&gt;&lt;hr&gt;PK id&lt;br&gt;name&lt;br&gt;email unique&lt;br&gt;password&lt;br&gt;role user/admin&lt;br&gt;created_at&lt;br&gt;updated_at" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fontSize=14;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="80" y="170" width="230" height="210" as="geometry"/>
+        </mxCell>
+        <mxCell id="products" value="&lt;b&gt;PRODUCTS&lt;/b&gt;&lt;hr&gt;PK id&lt;br&gt;sku unique nullable&lt;br&gt;name&lt;br&gt;unit&lt;br&gt;category&lt;br&gt;price&lt;br&gt;bulk_price&lt;br&gt;bulk_min_qty&lt;br&gt;quantity&lt;br&gt;created_at&lt;br&gt;updated_at" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fontSize=14;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="450" y="150" width="245" height="285" as="geometry"/>
+        </mxCell>
+        <mxCell id="sales" value="&lt;b&gt;SALES&lt;/b&gt;&lt;hr&gt;PK id&lt;br&gt;FK user_id&lt;br&gt;total&lt;br&gt;created_at&lt;br&gt;updated_at" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fontSize=14;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="820" y="170" width="220" height="165" as="geometry"/>
+        </mxCell>
+        <mxCell id="sale_items" value="&lt;b&gt;SALE_ITEMS&lt;/b&gt;&lt;hr&gt;PK id&lt;br&gt;FK sale_id&lt;br&gt;FK product_id&lt;br&gt;qty&lt;br&gt;price&lt;br&gt;created_at&lt;br&gt;updated_at" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fontSize=14;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="1190" y="160" width="230" height="205" as="geometry"/>
+        </mxCell>
+        <mxCell id="inquiries" value="&lt;b&gt;INQUIRIES&lt;/b&gt;&lt;hr&gt;PK id&lt;br&gt;customer_name&lt;br&gt;customer_email&lt;br&gt;subject&lt;br&gt;message&lt;br&gt;status pending/responded&lt;br&gt;response&lt;br&gt;responded_at&lt;br&gt;FK responded_by&lt;br&gt;fcm_token&lt;br&gt;created_at&lt;br&gt;updated_at" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fontSize=14;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="80" y="560" width="260" height="315" as="geometry"/>
+        </mxCell>
+        <mxCell id="messages" value="&lt;b&gt;MESSAGES&lt;/b&gt;&lt;hr&gt;PK id&lt;br&gt;user_name&lt;br&gt;message&lt;br&gt;created_at&lt;br&gt;updated_at" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fontSize=14;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="450" y="600" width="230" height="160" as="geometry"/>
+        </mxCell>
+        <mxCell id="activity_logs" value="&lt;b&gt;ACTIVITY_LOGS&lt;/b&gt;&lt;hr&gt;PK id&lt;br&gt;FK user_id nullable&lt;br&gt;user_name&lt;br&gt;user_role&lt;br&gt;action&lt;br&gt;description&lt;br&gt;ip_address&lt;br&gt;user_agent&lt;br&gt;created_at&lt;br&gt;updated_at" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fontSize=14;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="820" y="565" width="250" height="265" as="geometry"/>
+        </mxCell>
+        <mxCell id="sessions" value="&lt;b&gt;SESSIONS&lt;/b&gt;&lt;hr&gt;PK id&lt;br&gt;FK user_id nullable&lt;br&gt;ip_address&lt;br&gt;user_agent&lt;br&gt;payload&lt;br&gt;last_activity" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fontSize=14;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="1190" y="570" width="230" height="185" as="geometry"/>
+        </mxCell>
+        <mxCell id="password_reset" value="&lt;b&gt;PASSWORD_RESET_TOKENS&lt;/b&gt;&lt;hr&gt;PK email&lt;br&gt;token&lt;br&gt;created_at" style="rounded=0;whiteSpace=wrap;html=1;align=left;verticalAlign=top;spacing=8;fontSize=14;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="1190" y="850" width="255" height="125" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="r_user_sales" value="1        0..*" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=13;fontColor=#000000;strokeColor=#000000;endArrow=block;endFill=0;startArrow=none;" edge="1" parent="1" source="users" target="sales">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="r_sales_items" value="1        1..*" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=13;fontColor=#000000;strokeColor=#000000;endArrow=block;endFill=0;startArrow=none;" edge="1" parent="1" source="sales" target="sale_items">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="r_products_items" value="1        0..*" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=13;fontColor=#000000;strokeColor=#000000;endArrow=block;endFill=0;startArrow=none;" edge="1" parent="1" source="products" target="sale_items">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="r_user_inquiry_response" value="1        0..*" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=13;fontColor=#000000;strokeColor=#000000;endArrow=block;endFill=0;startArrow=none;" edge="1" parent="1" source="users" target="inquiries">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="r_user_logs" value="1        0..*" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=13;fontColor=#000000;strokeColor=#000000;endArrow=block;endFill=0;startArrow=none;" edge="1" parent="1" source="users" target="activity_logs">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="r_user_sessions" value="1        0..*" style="edgeStyle=orthogonalEdgeStyle;html=1;fontSize=13;fontColor=#000000;strokeColor=#000000;endArrow=block;endFill=0;startArrow=none;" edge="1" parent="1" source="users" target="sessions">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+        <mxCell id="key" value="Key: PK = Primary Key | FK = Foreign Key | 1 to 0..* means one record can connect to many records | Arrows point from parent table to child table" style="rounded=1;whiteSpace=wrap;html=1;fontSize=14;align=center;verticalAlign=middle;fontColor=#000000;strokeColor=#000000;fillColor=#ffffff;" vertex="1" parent="1">
+          <mxGeometry x="280" y="1040" width="1240" height="55" as="geometry"/>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

@@ -7,6 +7,7 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.net.ConnectivityManager
@@ -40,19 +41,29 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.firebase.messaging.FirebaseMessaging
+import org.json.JSONObject
 
 class MainActivity : AppCompatActivity() {
     private lateinit var webView: WebView
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var progressBar: ProgressBar
+    private lateinit var loadingView: View
     private lateinit var offlineView: View
     private lateinit var bottomNav: LinearLayout
     private lateinit var fabChatbot: View
     private lateinit var chatOverlay: LinearLayout
-    private lateinit var chatWebView: WebView
+    // Created on first use so app start only pays for one WebView
+    private var chatWebView: WebView? = null
     private val customerUrl: String by lazy { getString(R.string.customer_url) }
+    private val rootBaseUrl: String by lazy { customerUrl.substringBefore("/user-app").substringBefore("?") }
     private var fcmToken: String? = null
-    
+    // Token the server session already holds, so it is only sent again when it changes
+    private var registeredFcmToken: String? = null
+    private var pageReady = false
+    private var mainFrameFailed = false
+    // Set when the chat overlay went through login, so the main page picks up the new session
+    private var chatSessionChanged = false
+
     // File upload callback support for WebViews
     private var filePathCallback: ValueCallback<Array<Uri>>? = null
 
@@ -157,31 +168,12 @@ class MainActivity : AppCompatActivity() {
                 ViewGroup.LayoutParams.MATCH_PARENT
             ))
 
-            // Secondary WebView for Floating Chat
-            chatWebView = WebView(this).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    0,
-                    1.0f
-                )
-                setupWebViewSettings(this)
-                
-                webViewClient = object : WebViewClient() {
-                    override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                        return handleNavigation(request.url)
-                    }
-                }
-
-                webChromeClient = object : WebChromeClient() {
-                    override fun onShowFileChooser(
-                        webView: WebView?,
-                        filePathCallback: ValueCallback<Array<Uri>>?,
-                        fileChooserParams: FileChooserParams?
-                    ): Boolean {
-                        return handleFileChooser(filePathCallback, fileChooserParams)
-                    }
-                }
-            }
+            // Branded splash until the first page can be drawn, instead of a blank white screen
+            loadingView = createLoadingView()
+            contentFrame.addView(loadingView, FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            ))
 
             // Chat Overlay Header / Title Bar
             val chatHeader = LinearLayout(this).apply {
@@ -221,8 +213,7 @@ class MainActivity : AppCompatActivity() {
                     setBackgroundResource(outValue.resourceId)
 
                     setOnClickListener {
-                        chatOverlay.visibility = View.GONE
-                        chatWebView.onPause()
+                        closeChatSupport()
                     }
                 })
             }
@@ -249,7 +240,6 @@ class MainActivity : AppCompatActivity() {
                 visibility = View.GONE
 
                 addView(chatHeader)
-                addView(chatWebView)
             }
 
             contentFrame.addView(chatOverlay)
@@ -337,9 +327,8 @@ class MainActivity : AppCompatActivity() {
                                 }
                             }
                             android.view.MotionEvent.ACTION_UP -> {
+                                // A tap opens the chat (via the click listener); a drag only moves the button
                                 if (!isMoving) {
-                                    openChatSupport()
-                                } else {
                                     view.performClick()
                                 }
                             }
@@ -373,9 +362,6 @@ class MainActivity : AppCompatActivity() {
             webView.setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
                 downloadFile(url, userAgent, contentDisposition, mimeType)
             }
-            chatWebView.setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
-                downloadFile(url, userAgent, contentDisposition, mimeType)
-            }
 
             webView.webChromeClient = object : WebChromeClient() {
                 override fun onProgressChanged(view: WebView?, newProgress: Int) {
@@ -405,24 +391,36 @@ class MainActivity : AppCompatActivity() {
                     return handleNavigation(request.url)
                 }
 
+                override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
+                    pageReady = false
+                    mainFrameFailed = false
+                }
+
+                // Fires once the new page can be drawn, well before all of its images have loaded
+                override fun onPageCommitVisible(view: WebView, url: String) {
+                    hideLoadingView()
+                }
+
                 override fun onPageFinished(view: WebView, url: String) {
                     swipeRefreshLayout.isRefreshing = false
+                    hideLoadingView()
+                    CookieManager.getInstance().flush()
+
+                    // onPageFinished also fires for the WebView's error page; keep the offline view over it
+                    if (mainFrameFailed) return
+
                     offlineView.visibility = View.GONE
                     hideStaffControls(view)
-                    
-                    CookieManager.getInstance().flush()
-                    
-                    view.evaluateJavascript("window.isLoggedIn") { value ->
-                        val cleanValue = value?.replace("\"", "")?.trim()
-                        val isLoggedIn = cleanValue == "true"
-                        bottomNav.visibility = View.VISIBLE
-                        if (url.contains("/chat")) {
-                            fabChatbot.visibility = View.GONE
-                        } else {
-                            fabChatbot.visibility = View.VISIBLE
-                        }
-                    }
+                    bottomNav.visibility = View.VISIBLE
+                    updateFabVisibility()
+                    highlightActiveTab(url)
 
+                    pageReady = true
+                    syncFcmTokenWithServer()
+                }
+
+                // Also reports in-page section changes (#products, #inquire), which never reach onPageFinished
+                override fun doUpdateVisitedHistory(view: WebView, url: String, isReload: Boolean) {
                     highlightActiveTab(url)
                 }
 
@@ -432,10 +430,10 @@ class MainActivity : AppCompatActivity() {
                     error: WebResourceError
                 ) {
                     if (request.isForMainFrame) {
+                        mainFrameFailed = true
                         swipeRefreshLayout.isRefreshing = false
-                        if (!isNetworkAvailable()) {
-                            offlineView.visibility = View.VISIBLE
-                        }
+                        hideLoadingView()
+                        offlineView.visibility = View.VISIBLE
                     }
                 }
             }
@@ -443,18 +441,21 @@ class MainActivity : AppCompatActivity() {
             // Modern Android Back Navigation handler
             onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
+                    val chat = chatWebView
                     if (::chatOverlay.isInitialized && chatOverlay.visibility == View.VISIBLE) {
-                        if (chatWebView.canGoBack()) {
-                            chatWebView.goBack()
+                        if (chat != null && chat.canGoBack()) {
+                            chat.goBack()
                         } else {
-                            chatOverlay.visibility = View.GONE
-                            chatWebView.onPause()
+                            closeChatSupport()
                         }
                     } else if (webView.canGoBack()) {
                         webView.goBack()
                     } else {
+                        // Hand over to the system, then re-arm: on Android 12+ the activity is only
+                        // sent to the background, and a disabled callback would skip page history on return
                         isEnabled = false
                         onBackPressedDispatcher.onBackPressed()
+                        isEnabled = true
                     }
                 }
             })
@@ -466,7 +467,17 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            fetchFcmTokenAndLoad(savedInstanceState)
+            // Start loading right away with the token cached from a previous launch. Waiting for
+            // Firebase here used to hold the first request back by seconds on a cold start.
+            fcmToken = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).getString(KEY_FCM_TOKEN, null)
+            val restored = savedInstanceState != null && webView.restoreState(savedInstanceState) != null
+            val openTab = if (savedInstanceState == null) tabFromIntent(intent) else null
+            when {
+                openTab != null -> onTabSelected(openTab)
+                !restored -> loadStore()
+            }
+
+            refreshFcmToken()
 
         } catch (t: Throwable) {
             Toast.makeText(this, "Startup error: ${t.message}", Toast.LENGTH_LONG).show()
@@ -474,13 +485,85 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        tabFromIntent(intent)?.let { onTabSelected(it) }
+    }
+
+    // Notification taps open the Alerts tab, where inquiry replies are listed
+    private fun tabFromIntent(intent: Intent?): String? {
+        if (intent == null) return null
+        intent.getStringExtra(EXTRA_OPEN_TAB)?.let { return it }
+        // Pushes that Android displayed itself (app in background) arrive with the FCM extras
+        return if (intent.hasExtra("google.message_id")) "alerts" else null
+    }
+
     private fun openChatSupport() {
-        val rootBaseUrl = customerUrl.substringBefore("/user-app").substringBefore("?")
-        val chatUrl = getFinalUrlWithToken("$rootBaseUrl/chat")
-        
-        chatWebView.onResume()
-        chatWebView.loadUrl(chatUrl)
+        val chat = chatWebView ?: createChatWebView().also {
+            chatWebView = it
+            chatOverlay.addView(it)
+        }
+
+        chat.onResume()
+        chat.loadUrl("$rootBaseUrl/chat")
         chatOverlay.visibility = View.VISIBLE
+        updateFabVisibility()
+    }
+
+    private fun closeChatSupport() {
+        chatOverlay.visibility = View.GONE
+        chatWebView?.onPause()
+        updateFabVisibility()
+
+        if (chatSessionChanged) {
+            chatSessionChanged = false
+            webView.reload()
+        }
+    }
+
+    private fun updateFabVisibility() {
+        val onChatPage = webView.url?.contains("/chat") == true
+        fabChatbot.visibility = if (onChatPage || chatOverlay.visibility == View.VISIBLE) View.GONE else View.VISIBLE
+    }
+
+    // Secondary WebView for Floating Chat
+    private fun createChatWebView(): WebView {
+        return WebView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                0,
+                1.0f
+            )
+            setupWebViewSettings(this)
+
+            setDownloadListener { url, userAgent, contentDisposition, mimeType, _ ->
+                downloadFile(url, userAgent, contentDisposition, mimeType)
+            }
+
+            webViewClient = object : WebViewClient() {
+                override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                    return handleNavigation(request.url)
+                }
+
+                override fun onPageFinished(view: WebView, url: String) {
+                    // Guests are sent to login first; signing in here changes the main page's session too
+                    if (url.contains("/login") || url.contains("/register")) {
+                        chatSessionChanged = true
+                    }
+                }
+            }
+
+            webChromeClient = object : WebChromeClient() {
+                override fun onShowFileChooser(
+                    webView: WebView?,
+                    filePathCallback: ValueCallback<Array<Uri>>?,
+                    fileChooserParams: FileChooserParams?
+                ): Boolean {
+                    return handleFileChooser(filePathCallback, fileChooserParams)
+                }
+            }
+        }
     }
 
     private fun setupWebViewSettings(targetWebView: WebView) {
@@ -564,20 +647,65 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun fetchFcmTokenAndLoad(savedInstanceState: Bundle?) {
+    private fun refreshFcmToken() {
         FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
-            if (task.isSuccessful) {
-                fcmToken = task.result
-            }
-            
-            val finalUrl = getFinalUrlWithToken(customerUrl)
+            val token = if (task.isSuccessful) task.result else null
+            if (token.isNullOrEmpty()) return@addOnCompleteListener
 
-            if (savedInstanceState == null) {
-                webView.loadUrl(finalUrl)
-            } else {
-                webView.restoreState(savedInstanceState)
-            }
+            fcmToken = token
+            saveFcmToken(this, token)
+            syncFcmTokenWithServer()
         }
+    }
+
+    // Hands a token the current session does not have yet (first launch, rotated token) to the
+    // server from inside the page, so it lands in the same session the inquiry form posts from.
+    private fun syncFcmTokenWithServer() {
+        val token = fcmToken ?: return
+        if (!pageReady || token == registeredFcmToken || !isStoreUrl(webView.url)) return
+
+        val endpoint = customerUrl.substringBefore("?").trimEnd('/') + "/fcm-token"
+        webView.evaluateJavascript(
+            """
+            (function () {
+                var xsrf = document.cookie.match(/(?:^|;\s*)XSRF-TOKEN=([^;]+)/);
+                if (!xsrf) return false;
+                fetch(${JSONObject.quote(endpoint)}, {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-XSRF-TOKEN': decodeURIComponent(xsrf[1])
+                    },
+                    body: JSON.stringify({ fcm_token: ${JSONObject.quote(token)} })
+                }).catch(function () {});
+                return true;
+            })();
+            """.trimIndent()
+        ) { sent ->
+            if (sent == "true") registeredFcmToken = token
+        }
+    }
+
+    // Loads the catalog page; a known token rides along and the server keeps it in the session
+    private fun loadStore(section: String = "") {
+        registeredFcmToken = fcmToken
+        webView.loadUrl(getFinalUrlWithToken(customerUrl) + section)
+    }
+
+    private fun isStoreUrl(url: String?): Boolean {
+        if (url == null) return false
+        val store = Uri.parse(customerUrl)
+        val uri = Uri.parse(url)
+        return uri.scheme == store.scheme && uri.host == store.host && uri.port == store.port
+    }
+
+    // The catalog is served at /user-app, and at / after login and logout redirects
+    private fun isCatalogPage(url: String?): Boolean {
+        if (!isStoreUrl(url)) return false
+        val path = Uri.parse(url).path.orEmpty().trimEnd('/')
+        return path.isEmpty() || path == Uri.parse(customerUrl).path.orEmpty().trimEnd('/')
     }
 
     private fun getFinalUrlWithToken(baseUrl: String): String {
@@ -703,16 +831,47 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onTabSelected(tabId: String) {
-        val rootBaseUrl = customerUrl.substringBefore("/user-app").substringBefore("?")
+        val section = when (tabId) {
+            "home" -> "#home"
+            "products" -> "#products"
+            "inquiry" -> "#inquire"
+            else -> null
+        }
+
+        if (section != null) {
+            if (isCatalogPage(webView.url) && !mainFrameFailed) {
+                // Home, Products and Inquiry are sections of one page: switch in place
+                // instead of downloading and rendering the whole catalog again
+                showCatalogSection(section)
+            } else {
+                loadStore(if (section == "#home") "" else section)
+            }
+            return
+        }
+
         val targetUrl = when (tabId) {
-            "home" -> getFinalUrlWithToken(customerUrl)
-            "products" -> getFinalUrlWithToken(customerUrl) + "#products"
-            "inquiry" -> getFinalUrlWithToken(customerUrl) + "#inquire"
-            "profile" -> getFinalUrlWithToken("$rootBaseUrl/profile")
-            "alerts" -> getFinalUrlWithToken("$rootBaseUrl/notifications")
+            "profile" -> "$rootBaseUrl/profile"
+            "alerts" -> "$rootBaseUrl/notifications"
             else -> customerUrl
         }
         webView.loadUrl(targetUrl)
+    }
+
+    // The page's own hashchange handler (handleTabSwitching) shows the matching section
+    private fun showCatalogSection(section: String) {
+        webView.evaluateJavascript(
+            """
+            (function (hash) {
+                if ((location.hash || '#home') !== hash) {
+                    location.hash = hash;
+                } else if (typeof handleTabSwitching === 'function') {
+                    handleTabSwitching();
+                }
+                if (hash === '#home') window.scrollTo(0, 0);
+            })(${JSONObject.quote(section)});
+            """.trimIndent(),
+            null
+        )
     }
 
     private fun highlightActiveTab(url: String) {
@@ -722,8 +881,8 @@ class MainActivity : AppCompatActivity() {
         val activeTabId = when {
             url.contains("/profile") -> "profile"
             url.contains("/notifications") -> "alerts"
-            url.contains("#products") -> "products"
-            url.contains("#inquire") -> "inquiry"
+            url.contains("#product") -> "products" // #products and #product-{id} deep links
+            url.contains("#inquir") -> "inquiry" // #inquire and #inquiries
             else -> "home"
         }
 
@@ -779,7 +938,8 @@ class MainActivity : AppCompatActivity() {
             text = getString(R.string.retry)
             setOnClickListener {
                 wrapper.visibility = View.GONE
-                webView.loadUrl(getFinalUrlWithToken(customerUrl))
+                // Retry the page that failed rather than always dropping back to Home
+                if (webView.url.isNullOrEmpty()) loadStore() else webView.reload()
             }
         }
 
@@ -788,6 +948,36 @@ class MainActivity : AppCompatActivity() {
         wrapper.addView(retry)
 
         return wrapper
+    }
+
+    private fun createLoadingView(): View {
+        return LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setBackgroundColor(Color.WHITE)
+            isClickable = true // keep taps off the half-loaded page underneath
+
+            addView(ProgressBar(this@MainActivity).apply {
+                isIndeterminate = true
+                indeterminateDrawable.setColorFilter(
+                    Color.parseColor("#4f46e5"),
+                    android.graphics.PorterDuff.Mode.SRC_IN
+                )
+            })
+
+            addView(TextView(this@MainActivity).apply {
+                text = getString(R.string.app_name)
+                textSize = 16f
+                setTextColor(Color.rgb(15, 23, 42))
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                gravity = Gravity.CENTER
+                setPadding(0, dpToPx(16), 0, 0)
+            })
+        }
+    }
+
+    private fun hideLoadingView() {
+        loadingView.visibility = View.GONE
     }
 
     override fun onPause() {
@@ -801,4 +991,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private data class TabItem(val iconResId: Int, val title: String, val id: String)
+
+    companion object {
+        const val EXTRA_OPEN_TAB = "com.meras.userapp.OPEN_TAB"
+        private const val PREFS_NAME = "meras_user_app"
+        private const val KEY_FCM_TOKEN = "fcm_token"
+
+        fun saveFcmToken(context: Context, token: String) {
+            context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .putString(KEY_FCM_TOKEN, token)
+                .apply()
+        }
+    }
 }

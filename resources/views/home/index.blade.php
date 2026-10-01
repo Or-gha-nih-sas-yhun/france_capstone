@@ -297,16 +297,25 @@
                 by category or search for specific items.</p>
         </div>
 
-        <!-- Filter Card -->
-        <div class="filter-card">
-            <input type="text" id="landingSearch" placeholder="Search products by name or SKU..." class="form-control-lp"
-                style="flex: 2; min-width: 240px;">
-            <select id="categoryFilter" class="form-control-lp" style="flex: 1; min-width: 180px;">
+        @php
+            $categoryCounts = $products->filter(fn ($p) => filled($p->category))
+                ->countBy(fn ($p) => $p->category)
+                ->sortKeys();
+        @endphp
+
+        <!-- Filter Card (sticky search + category chips inside the app) -->
+        <div class="filter-card catalog-toolbar">
+            <div class="catalog-search">
+                <svg class="catalog-search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="search" id="landingSearch" placeholder="Search products or SKU…" class="form-control-lp"
+                    autocomplete="off" enterkeyhint="search" aria-label="Search products">
+                <button type="button" class="catalog-search-clear" id="landingSearchClear" aria-label="Clear search" hidden>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+            </div>
+            <select id="categoryFilter" class="form-control-lp catalog-category-select" aria-label="Filter by category">
                 <option value="">All Categories</option>
-                @php
-                    $categories = $products->pluck('category')->unique()->filter();
-                @endphp
-                @foreach($categories as $cat)
+                @foreach($categoryCounts as $cat => $count)
                     <option value="{{ $cat }}">{{ $cat }}</option>
                 @endforeach
             </select>
@@ -320,7 +329,25 @@
                     <span>DataTable</span>
                 </button>
             </div>
+            @if($categoryCounts->isNotEmpty())
+                <div class="catalog-chips" role="group" aria-label="Filter by category">
+                    <button type="button" class="catalog-chip active" data-cat="" aria-pressed="true">
+                        All <span class="catalog-chip-count">{{ $products->count() }}</span>
+                    </button>
+                    @foreach($categoryCounts as $cat => $count)
+                        <button type="button" class="catalog-chip" data-cat="{{ $cat }}" aria-pressed="false">
+                            {{ $cat }} <span class="catalog-chip-count">{{ $count }}</span>
+                        </button>
+                    @endforeach
+                </div>
+            @endif
         </div>
+
+        @if($products->isNotEmpty())
+            <div class="catalog-meta" id="catalogMeta">
+                <span id="catalogResultCount" aria-live="polite">{{ $products->count() }} {{ Str::plural('product', $products->count()) }}</span>
+            </div>
+        @endif
 
         <div class="product-grid" id="landingProductGrid">
             @forelse($products as $product)
@@ -330,33 +357,37 @@
                         @if($product->category)
                             <span class="prod-category">{{ $product->category }}</span>
                         @endif
-                        <div class="prod-name">{{ $product->name }}</div>
+                        <div class="prod-name" title="{{ $product->name }}">{{ $product->name }}</div>
                         @if($product->sku)
                             <div class="prod-sku">SKU: {{ $product->sku }}</div>
                         @endif
                     </div>
-                    <div class="stock-indicator">
-                        @if($product->quantity > 10)
+                    @if($product->quantity > 10)
+                        <div class="stock-indicator stock-in">
                             <span class="indicator-dot dot-in-stock"></span>
-                            <span style="color: var(--lp-success);">In Stock</span>
-                        @elseif($product->quantity > 0)
+                            <span>In Stock</span>
+                        </div>
+                    @elseif($product->quantity > 0)
+                        <div class="stock-indicator stock-low">
                             <span class="indicator-dot dot-low-stock"></span>
-                            <span style="color: var(--lp-warning);">Low Stock ({{ $product->quantity }} left)</span>
-                        @else
+                            <span>Only {{ $product->quantity }} left</span>
+                        </div>
+                    @else
+                        <div class="stock-indicator stock-out">
                             <span class="indicator-dot dot-out-of-stock"></span>
-                            <span style="color: var(--lp-danger);">Out of Stock</span>
-                        @endif
-                    </div>
+                            <span>Out of Stock</span>
+                        </div>
+                    @endif
                     <div class="prod-footer">
-                        <div>
+                        <div class="prod-pricing">
                             <div class="prod-price">₱{{ number_format($product->price, 2) }}</div>
                             @if($product->hasBulkPricing())
                                 <div class="landing-bulk-tag">
-                                    Bulk: ₱{{ number_format($product->bulk_price, 2) }} ({{ $product->bulk_min_qty }}+ pcs)
+                                    Bulk: ₱{{ number_format($product->bulk_price, 2) }} ({{ $product->bulk_min_qty }}+ {{ $product->unit ?: 'pcs' }})
                                 </div>
                             @endif
                         </div>
-                        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
+                        <div class="prod-actions">
                             <button type="button" class="btn-inquire"
                                 onclick="inquireProduct({{ $product->id }}, '{{ addslashes($product->name) }}', 'general')">Inquire</button>
                         </div>
@@ -375,6 +406,16 @@
                         inventory.</p>
                 </div>
             @endforelse
+
+            {{-- Shown by filterProducts() when a search or category leaves no cards visible --}}
+            <div class="catalog-empty" id="catalogEmptyState" hidden>
+                <div class="catalog-empty-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </div>
+                <p class="catalog-empty-title">No matching products</p>
+                <p class="catalog-empty-text">Try another name or SKU, or browse all categories.</p>
+                <button type="button" class="btn-inquire" id="catalogClearFilters">Clear filters</button>
+            </div>
         </div>
 
         <!-- DataTable View (Interactive Customer Products Table) -->
@@ -725,8 +766,12 @@
                 const tableWrapper = document.getElementById('landingProductDataTableWrapper');
                 const btnGrid = document.getElementById('btnViewGrid');
                 const btnTable = document.getElementById('btnViewTable');
+                const catalogMeta = document.getElementById('catalogMeta');
 
                 if (!grid || !tableWrapper) return;
+
+                // The table reports its own counts; the result line only describes the cards
+                if (catalogMeta) catalogMeta.hidden = mode === 'table';
 
                 if (mode === 'table') {
                     grid.style.display = 'none';
@@ -749,15 +794,22 @@
 
             // Filter products by category and search
             function filterProducts() {
-                const query = document.getElementById('landingSearch').value.toLowerCase().trim();
+                const searchInput = document.getElementById('landingSearch');
+                const query = searchInput.value.toLowerCase().trim();
                 const cat = document.getElementById('categoryFilter').value;
 
                 // 1. Filter Grid Cards
-                document.querySelectorAll('#landingProductGrid .product-card').forEach(card => {
+                const cards = document.querySelectorAll('#landingProductGrid .product-card');
+                let visible = 0;
+                cards.forEach(card => {
                     const matchName = card.dataset.name.includes(query) || card.dataset.sku.includes(query);
                     const matchCat = cat === "" || card.dataset.cat === cat;
-                    card.style.display = (matchName && matchCat) ? 'flex' : 'none';
+                    const match = matchName && matchCat;
+                    card.style.display = match ? 'flex' : 'none';
+                    if (match) visible++;
                 });
+
+                updateCatalogStatus(visible, cards.length, searchInput.value !== '', cat);
 
                 // 2. Filter DataTable if present
                 if (customerDataTable) {
@@ -769,6 +821,37 @@
                     }
                     customerDataTable.draw();
                 }
+            }
+
+            // Result line, empty state, clear button and chip highlight follow the current filters
+            function updateCatalogStatus(visible, total, hasQuery, cat) {
+                const noun = n => n === 1 ? 'product' : 'products';
+                const count = document.getElementById('catalogResultCount');
+                if (count) {
+                    count.textContent = visible === total
+                        ? total + ' ' + noun(total)
+                        : visible + ' of ' + total + ' ' + noun(total);
+                }
+
+                const empty = document.getElementById('catalogEmptyState');
+                if (empty) empty.hidden = total === 0 || visible > 0;
+
+                const clear = document.getElementById('landingSearchClear');
+                if (clear) clear.hidden = !hasQuery;
+
+                document.querySelectorAll('.catalog-chip').forEach(chip => {
+                    const active = chip.dataset.cat === cat;
+                    chip.classList.toggle('active', active);
+                    chip.setAttribute('aria-pressed', active ? 'true' : 'false');
+                });
+            }
+
+            // On phones, a filter change deep in the list brings the first results back into view
+            function revealCatalogTop() {
+                const section = document.getElementById('products');
+                if (!section || window.innerWidth >= 768) return;
+                const top = section.getBoundingClientRect().top + window.scrollY;
+                if (window.scrollY > top) window.scrollTo({ top: top, behavior: 'smooth' });
             }
 
             // Pre-select product and scroll to form
@@ -925,7 +1008,15 @@
 
             // Handle initial load and events
             window.addEventListener('hashchange', handleTabSwitching);
-            window.addEventListener('resize', handleTabSwitching);
+            // Only re-layout when crossing the phone/desktop breakpoint: the keyboard opening for
+            // the search field also fires resize, and must not jump the list back to the top
+            let wideCatalogLayout = window.innerWidth >= 768;
+            window.addEventListener('resize', () => {
+                const wide = window.innerWidth >= 768;
+                if (wide === wideCatalogLayout) return;
+                wideCatalogLayout = wide;
+                handleTabSwitching();
+            });
             handleTabSwitching();
 
             // View Switcher event listeners
@@ -937,13 +1028,57 @@
             const savedCatalogView = (function() {
                 try { return localStorage.getItem('meras_catalog_view'); } catch(e) { return null; }
             })();
-            if (savedCatalogView === 'table') {
+            // Phones always get the cards (the table view is hidden there), so skip loading DataTables
+            if (savedCatalogView === 'table' && window.innerWidth >= 768) {
                 setCatalogView('table');
             }
 
             // Attach event listeners
-            document.getElementById('categoryFilter').addEventListener('change', filterProducts);
-            document.getElementById('landingSearch').addEventListener('input', filterProducts);
+            const categoryFilter = document.getElementById('categoryFilter');
+            const landingSearch = document.getElementById('landingSearch');
+            categoryFilter.addEventListener('change', filterProducts);
+            landingSearch.addEventListener('input', filterProducts);
+
+            document.querySelectorAll('.catalog-chip').forEach(chip => {
+                chip.addEventListener('click', () => {
+                    categoryFilter.value = chip.dataset.cat;
+                    filterProducts();
+                    revealCatalogTop();
+                    // Center the picked chip in its row (scrollIntoView would also fight the page scroll)
+                    const row = chip.parentElement;
+                    row.scrollTo({ left: chip.offsetLeft - (row.clientWidth - chip.offsetWidth) / 2, behavior: 'smooth' });
+                });
+            });
+
+            document.getElementById('landingSearchClear').addEventListener('click', () => {
+                landingSearch.value = '';
+                filterProducts();
+                landingSearch.focus();
+            });
+
+            document.getElementById('catalogClearFilters').addEventListener('click', () => {
+                landingSearch.value = '';
+                categoryFilter.value = '';
+                filterProducts();
+                revealCatalogTop();
+            });
+
+            // Hide the keyboard on "search" so the results are not covered
+            landingSearch.addEventListener('keydown', e => {
+                if (e.key === 'Enter') landingSearch.blur();
+            });
+
+            // Browsers can restore typed filters on back/forward; sync the cards with them
+            filterProducts();
+
+            // Lift the pinned search bar (app only, see landing.css) off the list once the title scrolls away
+            const catalogToolbar = document.querySelector('.catalog-toolbar');
+            const catalogHeader = document.querySelector('#products .section-header');
+            if (catalogToolbar && catalogHeader && 'IntersectionObserver' in window) {
+                new IntersectionObserver(([entry]) => {
+                    catalogToolbar.classList.toggle('is-stuck', !entry.isIntersecting);
+                }).observe(catalogHeader);
+            }
 
             // ── Shop Gallery Lightbox ──────────────────────────
             const gallerySlides = [

@@ -507,6 +507,132 @@ select.form-control-lp {
   padding-right: 48px;
 }
 
+/* Search field with icon and clear button */
+.catalog-search {
+  position: relative;
+  flex: 2;
+  min-width: 240px;
+}
+
+.catalog-search .form-control-lp {
+  width: 100%;
+  padding-left: 46px;
+  padding-right: 46px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.catalog-search .form-control-lp::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  display: none;
+}
+
+.catalog-search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--lp-text-subtle);
+  pointer-events: none;
+}
+
+.catalog-search-clear {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--lp-text-muted);
+  cursor: pointer;
+}
+
+.catalog-search-clear:hover,
+.catalog-search-clear:active {
+  background: var(--lp-surface-hover);
+  color: var(--lp-secondary);
+}
+
+.catalog-search-clear[hidden] {
+  display: none;
+}
+
+.catalog-category-select {
+  flex: 1;
+  min-width: 180px;
+}
+
+/* Category chips replace the dropdown on phones */
+.catalog-chips {
+  display: none;
+}
+
+.catalog-meta {
+  margin: -24px 0 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--lp-text-muted);
+}
+
+.catalog-meta[hidden] {
+  display: none;
+}
+
+/* Empty state when filters match nothing */
+.catalog-empty {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 56px 24px;
+}
+
+.catalog-empty[hidden] {
+  display: none;
+}
+
+.catalog-empty-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--lp-primary-light);
+  color: var(--lp-primary);
+  margin-bottom: 16px;
+}
+
+.catalog-empty-title {
+  font-family: var(--font-title);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--lp-secondary);
+}
+
+.catalog-empty-text {
+  font-size: 0.9rem;
+  color: var(--lp-text-muted);
+  margin: 4px 0 18px;
+}
+
+/* The only action on screen: solid, so it doesn't fade into the tinted page */
+.catalog-empty .btn-inquire {
+  background-color: var(--lp-primary);
+  color: #ffffff;
+}
+
+.catalog-empty .btn-inquire:hover {
+  background-color: var(--lp-primary-hover);
+}
+
 /* Product Grid & Cards */
 .product-grid {
   display: grid;
@@ -545,10 +671,18 @@ select.form-control-lp {
   transition: var(--lp-transition);
 }
 
-.product-card:hover {
-  transform: translateY(-6px);
-  box-shadow: var(--lp-shadow-xl);
-  border-color: rgba(79, 70, 229, 0.15);
+/* Hover lift only where a pointer can hover; on touch screens it would stick after a tap */
+@media (hover: hover) {
+  .product-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--lp-shadow-xl);
+    border-color: rgba(79, 70, 229, 0.15);
+  }
+
+  .product-card:hover .prod-category {
+    background-color: var(--lp-primary-light);
+    color: var(--lp-primary);
+  }
 }
 
 .prod-header {
@@ -569,11 +703,6 @@ select.form-control-lp {
   color: var(--lp-text-muted);
   border-radius: 4px;
   transition: var(--lp-transition-fast);
-}
-
-.product-card:hover .prod-category {
-  background-color: var(--lp-primary-light);
-  color: var(--lp-primary);
 }
 
 .prod-name {
@@ -617,6 +746,19 @@ select.form-control-lp {
 
 .dot-out-of-stock {
   background-color: var(--lp-danger);
+}
+
+/* Darker text shades than the dots so the labels stay readable on white */
+.stock-in { color: #047857; }
+.stock-low { color: #b45309; }
+.stock-out { color: #b91c1c; }
+
+.prod-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .prod-footer {
@@ -1654,5 +1796,296 @@ select.form-control-lp {
   /* Add padding-bottom to body so the content doesn't get covered by the nav bar */
   body {
     padding-bottom: 75px !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Product Catalog — Phones & the Android App
+   Compact two-column cards, search and category chips that
+   stay pinned in the app while the list scrolls.
+   ══════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+  #products.section-container {
+    /* Its auto margins in the flex column <main> would otherwise size it to its content,
+       letting the scrolling chip row widen the whole page */
+    width: 100%;
+    padding: 20px 16px 28px;
+    background: var(--color-bg, #eef0f7);
+  }
+
+  /* The app's Products tab shows this section alone: let it fill the screen */
+  .in-app #products {
+    flex: 1 0 auto;
+  }
+
+  #products .section-header {
+    text-align: left;
+    max-width: none;
+    margin: 0 0 8px;
+  }
+
+  #products .section-title {
+    font-size: 1.5rem;
+    margin-bottom: 0;
+  }
+
+  #products .section-desc {
+    display: none;
+  }
+
+  /* Toolbar: search field over a row of category chips */
+  .catalog-toolbar {
+    flex-direction: column;
+    /* A wrapping column sizes its line to the widest item, so the chip row would never scroll */
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 10px;
+    margin: 0 -16px;
+    padding: 8px 16px 10px;
+    background: var(--color-bg, #eef0f7);
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .in-app .catalog-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgba(238, 240, 247, 0.94);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    transition: box-shadow 0.2s ease;
+  }
+
+  /* Set by the catalog script once the page title has scrolled away */
+  .in-app .catalog-toolbar.is-stuck {
+    box-shadow: 0 8px 16px -12px rgba(15, 23, 42, 0.35);
+  }
+
+  .catalog-search {
+    flex: none;
+    min-width: 0;
+  }
+
+  .catalog-search .form-control-lp {
+    height: 46px;
+    padding-top: 0;
+    padding-bottom: 0;
+    font-size: 16px; /* smaller text makes iOS zoom the page on focus */
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  }
+
+  .catalog-search .form-control-lp::placeholder {
+    color: var(--lp-text-subtle);
+  }
+
+  /* Scoped to the toolbar to win over the switcher styles inlined by the catalog page */
+  .catalog-toolbar .catalog-category-select,
+  .catalog-toolbar .catalog-view-switcher {
+    display: none;
+  }
+
+  .catalog-chips {
+    display: flex;
+    position: relative;
+    gap: 8px;
+    overflow-x: auto;
+    margin: 0 -16px;
+    padding: 0 16px 2px;
+    scrollbar-width: none;
+  }
+
+  .catalog-chips::-webkit-scrollbar {
+    display: none;
+  }
+
+  .catalog-chip {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 34px;
+    padding: 0 14px;
+    border: 1px solid var(--lp-border);
+    border-radius: 999px;
+    background: #ffffff;
+    color: var(--lp-text);
+    font-family: var(--font-sans);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  }
+
+  .catalog-chip-count {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    color: var(--lp-text-subtle);
+  }
+
+  .catalog-chip.active {
+    background: var(--lp-primary);
+    border-color: var(--lp-primary);
+    color: #ffffff;
+  }
+
+  .catalog-chip.active .catalog-chip-count {
+    color: rgba(255, 255, 255, 0.75);
+  }
+
+  .catalog-meta {
+    margin: 4px 2px 10px;
+    font-size: 0.8125rem;
+  }
+
+  /* Cards only: the data table does not fit a phone screen */
+  #landingProductGrid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  #landingProductDataTableWrapper {
+    display: none !important;
+  }
+
+  .product-grid .product-card {
+    contain-intrinsic-size: auto 210px;
+  }
+
+  .product-card {
+    min-height: 0;
+    padding: 12px;
+    border: 1px solid var(--lp-border);
+    border-radius: 14px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .prod-header {
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+
+  .prod-category {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    /* Sentence case keeps "General Merchandise" whole in a half-width card */
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 6px;
+    background-color: var(--lp-primary-light);
+    color: var(--lp-primary);
+  }
+
+  .prod-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 2.7em; /* two lines, so prices line up across a row */
+  }
+
+  .prod-sku {
+    font-size: 0.6875rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .stock-indicator {
+    align-self: flex-start;
+    gap: 5px;
+    margin-bottom: 10px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 0.6875rem;
+    white-space: nowrap;
+  }
+
+  .stock-indicator.stock-in { background: var(--lp-success-light); }
+  .stock-indicator.stock-low { background: var(--lp-warning-light); }
+  .stock-indicator.stock-out { background: var(--lp-danger-light); }
+
+  /* Dozens of pulsing dots on one screen read as noise; keep them still */
+  .indicator-dot {
+    width: 6px;
+    height: 6px;
+    animation: none;
+  }
+
+  .prod-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding-top: 10px;
+  }
+
+  .prod-price {
+    font-size: 1.05rem;
+    line-height: 1.2;
+  }
+
+  .product-card:has(.stock-out) .prod-price {
+    color: var(--lp-text-muted);
+  }
+
+  .landing-bulk-tag {
+    font-size: 0.625rem;
+    line-height: 1.35;
+    padding: 2px 6px;
+  }
+
+  .prod-actions {
+    display: block;
+  }
+
+  .btn-inquire {
+    width: 100%;
+    min-height: 38px;
+    border-radius: 10px;
+    font-size: 0.8125rem;
+  }
+
+  .btn-inquire:active {
+    background-color: var(--lp-primary);
+    color: #ffffff;
+  }
+
+  .catalog-empty {
+    padding: 48px 16px;
+  }
+
+  .catalog-empty .btn-inquire {
+    width: auto;
+    padding: 0 22px;
+  }
+}
+
+/* Large phones in landscape and small tablets fit a third column */
+@media (min-width: 560px) and (max-width: 767px) {
+  #landingProductGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Very narrow screens: one card per row */
+@media (max-width: 330px) {
+  #landingProductGrid {
+    grid-template-columns: 1fr;
   }
 }

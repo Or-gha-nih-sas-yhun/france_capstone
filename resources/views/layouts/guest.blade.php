@@ -116,7 +116,7 @@
 
     @stack('styles')
 </head>
-<body>
+<body @if($isMobileApp) class="in-app" @endif>
     @if(!$isMobileApp)
         <header class="guest-header">
             <div class="guest-nav-container">

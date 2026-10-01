@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Product;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -65,6 +66,24 @@ class MobileAppTest extends TestCase
             $html,
             'Gallery thumbnails must wait until the gallery is opened.'
         );
+    }
+
+    /** @test */
+    public function the_catalog_offers_a_category_chip_with_its_product_count()
+    {
+        Product::create(['sku' => 'FAB-1', 'name' => 'Cotton', 'category' => 'Fabric', 'price' => 100, 'quantity' => 20]);
+        Product::create(['sku' => 'FAB-2', 'name' => 'Linen', 'category' => 'Fabric', 'price' => 150, 'quantity' => 3]);
+        Product::create(['sku' => 'SCH-1', 'name' => 'Pencil', 'category' => 'School Supplies', 'price' => 10, 'quantity' => 0]);
+
+        $this->withHeader('User-Agent', self::APP_UA)
+            ->get('/user-app')
+            ->assertStatus(200)
+            ->assertSee('class="in-app"', false)
+            ->assertSee('All <span class="catalog-chip-count">3</span>', false)
+            ->assertSee('Fabric <span class="catalog-chip-count">2</span>', false)
+            ->assertSee('School Supplies <span class="catalog-chip-count">1</span>', false)
+            ->assertSee('3 products')
+            ->assertSee('Only 3 left');
     }
 
     /** @test */

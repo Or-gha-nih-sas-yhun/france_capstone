@@ -308,10 +308,6 @@
             @endif
         </div>
     @endif
-
-    @include('partials.chatbot')
-
-    {{-- Must stay after the chatbot: both sit at the max z-index, so DOM order decides. --}}
     @include('partials.offline-overlay')
 
     @stack('scripts')

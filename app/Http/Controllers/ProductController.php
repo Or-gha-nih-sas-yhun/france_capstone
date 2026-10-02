@@ -86,7 +86,9 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
+        $isEdit = $request->input('action') === 'edit';
+
+        $rules = [
             'name' => 'required|string|max:200',
             'sku' => 'nullable|string|max:50',
             'unit' => 'nullable|string|max:20',
@@ -96,8 +98,16 @@ class ProductController extends Controller
             // POS together with the quantity that unlocks it, so require the pair.
             'bulk_price' => 'nullable|numeric|min:0|required_with:bulk_min_qty',
             'bulk_min_qty' => 'nullable|integer|min:2|required_with:bulk_price',
-            'quantity' => 'required|integer|min:0',
-        ]);
+        ];
+
+        if ($isEdit) {
+            $rules['id'] = 'required|integer|exists:products,id';
+            $rules['additional_quantity'] = 'required|integer|min:0';
+        } else {
+            $rules['quantity'] = 'required|integer|min:0';
+        }
+
+        $data = $request->validate($rules);
 
         $data['unit'] = $this->normaliseUnit((string) ($data['unit'] ?? ''));
 
@@ -105,9 +115,11 @@ class ProductController extends Controller
         $data['bulk_price'] = $data['bulk_price'] ?? null;
         $data['bulk_min_qty'] = $data['bulk_min_qty'] ?? null;
 
-        if ($request->input('action') === 'edit') {
-            $product = Product::findOrFail($request->input('id'));
+        if ($isEdit) {
+            $product = Product::findOrFail($data['id']);
             $oldQuantity = $product->quantity;
+            $data['quantity'] = $oldQuantity + $data['additional_quantity'];
+            unset($data['id'], $data['additional_quantity']);
             $product->update($data);
             \App\Models\ActivityLog::log('update_product', 'Updated product: ' . $product->name . ' (SKU: ' . $product->sku . ', Qty: ' . $oldQuantity . ' -> ' . $product->quantity . ')');
             return redirect()->route('products.index')->with('notice', 'Product updated successfully.')->with('noticeType', 'success');

@@ -335,6 +335,11 @@
         background: #fff;
         box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
     }
+    .inv-form-group input[readonly] {
+        background: #f1f5f9;
+        color: var(--color-text-muted);
+        cursor: not-allowed;
+    }
     .inv-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .inv-form-row.is-triple { grid-template-columns: 1fr 1fr 0.8fr; }
     .inv-unit-badge {
@@ -582,18 +587,24 @@
                         <input type="text" name="category" value="{{ old('category', $editProduct->category) }}" placeholder="e.g. Beverages">
                     </div>
                 </div>
-                <div class="inv-form-row is-triple">
+                <div class="inv-form-row">
                     <div class="inv-form-group">
                         <label>Price (PHP) <span style="color:var(--color-danger);">*</span></label>
                         <input type="number" step="0.01" min="0" name="price" value="{{ old('price', $editProduct->price) }}" required placeholder="0.00">
                     </div>
                     <div class="inv-form-group">
-                        <label>Stock Qty <span style="color:var(--color-danger);">*</span></label>
-                        <input type="number" min="0" name="quantity" value="{{ old('quantity', $editProduct->quantity) }}" required placeholder="0">
-                    </div>
-                    <div class="inv-form-group">
                         <label>Unit</label>
                         <input type="text" name="unit" list="unitOptions" value="{{ old('unit', $editProduct->unit) }}" placeholder="pcs">
+                    </div>
+                </div>
+                <div class="inv-form-row">
+                    <div class="inv-form-group">
+                        <label>Remaining Quantity</label>
+                        <input type="number" value="{{ $editProduct->quantity }}" readonly aria-readonly="true">
+                    </div>
+                    <div class="inv-form-group">
+                        <label>Additional Quantity <span style="color:var(--color-danger);">*</span></label>
+                        <input type="number" min="0" name="additional_quantity" value="{{ old('additional_quantity', 0) }}" required placeholder="0">
                     </div>
                 </div>
                 <div class="inv-form-row">

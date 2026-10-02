@@ -52,8 +52,11 @@ abstract class TestCase extends BaseTestCase
             $table->id();
             $table->string('sku')->nullable();
             $table->string('name');
+            $table->string('unit', 20)->nullable();
             $table->string('category')->nullable();
             $table->decimal('price', 10, 2);
+            $table->decimal('bulk_price', 12, 2)->nullable();
+            $table->integer('bulk_min_qty')->nullable();
             $table->integer('quantity')->default(0);
             $table->timestamps();
         });

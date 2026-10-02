@@ -118,6 +118,51 @@
             margin-bottom: 8px;
         }
 
+        .password-field {
+            position: relative;
+        }
+
+        .password-field .form-control {
+            padding-right: 46px;
+        }
+
+        .password-toggle {
+            position: absolute;
+            top: 50%;
+            right: 12px;
+            width: 32px;
+            height: 32px;
+            padding: 0;
+            border: 0;
+            background: transparent;
+            color: #64748b;
+            cursor: pointer;
+            transform: translateY(-50%);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+        }
+
+        .password-toggle:hover,
+        .password-toggle:focus-visible {
+            color: #4f46e5;
+            background: #eef2ff;
+            outline: none;
+        }
+
+        .password-toggle .eye-off-icon {
+            display: none;
+        }
+
+        .password-toggle.is-visible .eye-icon {
+            display: none;
+        }
+
+        .password-toggle.is-visible .eye-off-icon {
+            display: block;
+        }
+
         .btn-social {
             display: flex;
             align-items: center;
@@ -362,7 +407,21 @@
                     <label for="password" style="margin-bottom: 0;">Password</label>
                     <a href="{{ route('password.request') }}" style="font-size: 0.8rem; color: #4f46e5; text-decoration: none; font-weight: 600;">Forgot Password?</a>
                 </div>
-                <input type="password" name="password" id="password" class="form-control" required>
+                <div class="password-field">
+                    <input type="password" name="password" id="password" class="form-control" required>
+                    <button type="button" class="password-toggle" id="passwordToggle" aria-label="Show password" aria-pressed="false">
+                        <svg class="eye-icon" xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                        <svg class="eye-off-icon" xmlns="http://www.w3.org/2000/svg" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M3 3l18 18"></path>
+                            <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path>
+                            <path d="M9.9 4.2A10.8 10.8 0 0 1 12 4c6.5 0 10 8 10 8a16.7 16.7 0 0 1-2.1 3.2"></path>
+                            <path d="M6.6 6.6C3.6 8.6 2 12 2 12s3.5 8 10 8a9.8 9.8 0 0 0 4.1-.9"></path>
+                        </svg>
+                    </button>
+                </div>
             </div>
             <button type="submit" class="btn btn-primary btn-block" id="loginSubmitBtn">
                 <span id="loginBtnText">Log In</span>
@@ -407,6 +466,19 @@
         const loginLoadingOverlay = document.getElementById('loginLoadingOverlay');
         const loadingTitle = document.getElementById('loadingTitle');
         const loadingSub = document.getElementById('loadingSub');
+        const passwordInput = document.getElementById('password');
+        const passwordToggle = document.getElementById('passwordToggle');
+
+        if (passwordInput && passwordToggle) {
+            passwordToggle.addEventListener('click', function () {
+                const isVisible = passwordInput.type === 'text';
+                passwordInput.type = isVisible ? 'password' : 'text';
+                passwordToggle.classList.toggle('is-visible', !isVisible);
+                passwordToggle.setAttribute('aria-pressed', String(!isVisible));
+                passwordToggle.setAttribute('aria-label', isVisible ? 'Show password' : 'Hide password');
+                passwordInput.focus();
+            });
+        }
 
         if (loginForm) {
             loginForm.addEventListener('submit', function (event) {

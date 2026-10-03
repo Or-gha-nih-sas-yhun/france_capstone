@@ -1,0 +1,392 @@
+"""MERAS flowcharts 2-12: account pages, customer features and the administrator portal menu."""
+from flowchart_registry import chart, entry
+
+
+# --------------------------------------------------------------------------- 2
+@chart("02-login", "Flowchart 2. Log In (AE)", cw=290, rh=150)
+def login(c):
+    entry(c, "AE", 'View "Login" Page')
+    c.dec("d_forgot", "Forgot Password?", 0, 3.2)
+    c.off("AG", "AG", 1, 3.2)
+    c.dec("d_reg", "No Account? Register", 0, 4.7)
+    c.off("AF", "AF", 1, 4.7)
+    c.dec("d_goog", "Sign in with Google?", 0, 6.2)
+    c.e("view", "d_forgot")
+    c.e("d_forgot", "AG", "Yes", out="r", into="l")
+    c.e("d_forgot", "d_reg", "No")
+    c.e("d_reg", "AF", "Yes", out="r", into="l")
+    c.e("d_reg", "d_goog", "No")
+    # Google branch
+    c.proc("g_ver", "Verify Google Credential", 1, 6.2)
+    c.dec("g_ok", "Credential Valid?", 2, 6.2)
+    c.e("d_goog", "g_ver", "Yes", out="r", into="l")
+    c.e("g_ver", "g_ok", out="r", into="l")
+    c.proc("g_err", 'Display "Invalid authentication parameters"', 2, 7.6)
+    c.conn("c1b", "1", 2, 8.7)
+    c.e("g_ok", "g_err", "No")
+    c.e("g_err", "c1b")
+    c.db("g_db", "users_db\n(find or create customer)", 3, 6.2)
+    c.conn("c3a", "3", 3, 7.6)
+    c.e("g_ok", "g_db", "Yes", out="r", into="l")
+    c.e("g_db", "c3a")
+    # e-mail / password branch
+    c.io("in_cred", "Input Email and Password", 0, 7.7)
+    c.e("d_goog", "in_cred", "No")
+    c.dec("d_cred", "Credentials Valid?", 0, 9.2)
+    c.e("in_cred", "d_cred")
+    c.proc("bad", 'Display "Credentials do not match our records"', 1, 9.2)
+    c.conn("c1c", "1", 2, 9.2)
+    c.e("d_cred", "bad", "No", out="r", into="l")
+    c.e("bad", "c1c", out="r", into="l")
+    c.conn("c3", "3", -1, 10.15)
+    c.dec("d_mob", "Mobile App and Staff Account?", 0, 10.7)
+    c.e("d_cred", "d_mob", "Yes")
+    c.e("c3", "d_mob", out="r", into="t")
+    c.proc("mob_err", 'Display "Staff access is not permitted in the mobile app"; Log Out', 1, 10.7)
+    c.conn("c1d", "1", 2, 10.7)
+    c.e("d_mob", "mob_err", "Yes", out="r", into="l")
+    c.e("mob_err", "c1d", out="r", into="l")
+    c.dec("d_role", "Role is Admin?", 0, 12.2)
+    c.e("d_mob", "d_role", "No")
+    c.proc("adm", "Record Login Activity; Redirect to Admin Portal", 1, 12.2)
+    c.off("AA", "AA", 2, 12.2)
+    c.e("d_role", "adm", "Yes", out="r", into="l")
+    c.e("adm", "AA", out="r", into="l")
+    c.proc("cus", "Record Login Activity; Redirect to Customer Home Page", 0, 13.7)
+    c.off("AB", "AB", 0, 15.0)
+    c.e("d_role", "cus", "No")
+    c.e("cus", "AB")
+
+
+# --------------------------------------------------------------------------- 3
+@chart("03-register", "Flowchart 3. Register / Create Account (AF)", cw=290, rh=150)
+def register(c):
+    entry(c, "AF", 'View "Register" Page')
+    c.io("inp", "Input Name, Email, Password and Confirm Password", 0, 3.2)
+    c.e("view", "inp")
+    c.dec("d_has", "Already Have an Account?", 0, 4.8)
+    c.off("AE", "AE", 1, 4.8)
+    c.e("inp", "d_has")
+    c.e("d_has", "AE", "Yes", out="r", into="l")
+    c.dec("d_val", "All Fields Valid? (Password min. 6, Matches)", 0, 6.4)
+    c.e("d_has", "d_val", "No")
+    c.proc("err1", "Display Validation Error", 1, 6.4)
+    c.conn("c1b", "1", 2, 6.4)
+    c.e("d_val", "err1", "No", out="r", into="l")
+    c.e("err1", "c1b", out="r", into="l")
+    c.dec("d_dup", "Email Already Registered?", 0, 8.0)
+    c.e("d_val", "d_dup", "Yes")
+    c.proc("err2", 'Display "The email has already been taken"', 1, 8.0)
+    c.conn("c1c", "1", 2, 8.0)
+    c.e("d_dup", "err2", "Yes", out="r", into="l")
+    c.e("err2", "c1c", out="r", into="l")
+    c.proc("hash", 'Hash Password; Assign Role "Customer"', 0, 9.6)
+    c.e("d_dup", "hash", "No")
+    c.db("db", "users_db", 0, 11.1)
+    c.e("hash", "db")
+    c.act("save", "Save Account", 1, 11.1)
+    c.e("db", "save", out="r", into="l")
+    c.proc("auto", "Log In Automatically; Record Registration Activity", 1, 12.7)
+    c.e("save", "auto")
+    c.off("AB", "AB", 1, 14.0)
+    c.e("auto", "AB")
+
+
+# --------------------------------------------------------------------------- 4
+@chart("04-forgot-password", "Flowchart 4. Forgot Password (AG)", cw=290, rh=150)
+def forgot(c):
+    entry(c, "AG", 'View "Forgot Password" Page')
+    c.io("inp", "Enter Registered Email Address", 0, 3.2)
+    c.e("view", "inp")
+    c.dec("d_send", "Send Reset Link?", 0, 4.7)
+    c.e("inp", "d_send")
+    c.dec("d_back", "Back to Login?", 0, 6.2)
+    c.e("d_send", "d_back", "No")
+    c.off("AE", "AE", -1, 6.2)
+    c.e("d_back", "AE", "Yes", out="l", into="r")
+    c.conn("c1b", "1", 0, 7.6)
+    c.e("d_back", "c1b", "No")
+    c.dec("d_valid", "Email Valid and Registered?", 1, 4.7)
+    c.e("d_send", "d_valid", "Yes", out="r", into="l")
+    c.proc("nf", 'Display "We could not find an account with that email address"', 1, 6.4)
+    c.conn("c1c", "1", 1, 7.8)
+    c.e("d_valid", "nf", "No")
+    c.e("nf", "c1c")
+    c.proc("tok", "Generate Reset Token (valid for 60 minutes)", 2, 4.7)
+    c.e("d_valid", "tok", "Yes", out="r", into="l")
+    c.db("db", "password_reset_tokens_db", 2, 6.1)
+    c.e("tok", "db")
+    c.proc("mail", "Send Reset Link by Email", 2, 7.6)
+    c.e("db", "mail")
+    c.dec("d_sent", "Email Sent Successfully?", 2, 9.1)
+    c.e("mail", "d_sent")
+    c.proc("fail", 'Display "Unable to send reset email"', 1, 9.1)
+    c.conn("c1d", "1", 1, 10.4)
+    c.e("d_sent", "fail", "No", out="l", into="r")
+    c.e("fail", "c1d")
+    c.proc("ok", 'Display "We have emailed your password reset link"', 2, 10.6)
+    c.off("AG2", "AG2", 2, 11.95)
+    c.e("d_sent", "ok", "Yes")
+    c.e("ok", "AG2")
+
+
+# --------------------------------------------------------------------------- 5
+@chart("05-reset-password", "Flowchart 5. Reset Password from the Emailed Link (AG2)", cw=290, rh=150)
+def reset(c):
+    entry(c, "AG2", 'Open "Reset Password" Link from Email')
+    c.dec("d_tok", "Token Valid and Not Expired?", 0, 3.2)
+    c.e("view", "d_tok")
+    c.proc("bad", 'Display "This password reset link is invalid or has expired"', 1, 3.2)
+    c.off("AG", "AG", 2, 3.2)
+    c.e("d_tok", "bad", "No", out="r", into="l")
+    c.e("bad", "AG", out="r", into="l")
+    c.conn("c2", "2", -1, 4.0)
+    c.io("inp", "Input New Password and Confirm Password", 0, 4.9)
+    c.e("d_tok", "inp", "Yes")
+    c.e("c2", "inp", out="r", into="t")
+    c.dec("d_ok", "Passwords Match and at Least 6 Characters?", 0, 6.5)
+    c.e("inp", "d_ok")
+    c.proc("err", "Display Validation Error", 1, 6.5)
+    c.conn("c2b", "2", 2, 6.5)
+    c.e("d_ok", "err", "No", out="r", into="l")
+    c.e("err", "c2b", out="r", into="l")
+    c.db("db", "users_db", 0, 8.2)
+    c.e("d_ok", "db", "Yes")
+    c.act("save", "Save New Password (Hashed)", 1, 8.2)
+    c.e("db", "save", out="r", into="l")
+    c.proc("del", "Delete Reset Token", 1, 9.7)
+    c.e("save", "del")
+    c.proc("msg", 'Display "Your password has been successfully updated"', 1, 11.2)
+    c.e("del", "msg")
+    c.off("AE", "AE", 1, 12.6)
+    c.e("msg", "AE")
+
+
+# --------------------------------------------------------------------------- 6
+@chart("06-customer-portal", "Flowchart 6. Customer Home Page / Portal (AB)", cw=300, rh=140)
+def customer_portal(c):
+    c.off("in", "AB", 0, 0)
+    c.conn("c1", "1", -1, 1.2)
+    c.proc("view", 'View "Home Page" (Logged-in Customer)', 0, 1.75)
+    c.e("in", "view")
+    c.e("c1", "view", out="r", into="t")
+    items = [
+        ("d_prod", "Browse Products", "AH"),
+        ("d_inq", "Send Inquiry", "AI"),
+        ("d_chat", "Chat Support", "AJ"),
+        ("d_prof", "My Profile and Notifications", "AK"),
+    ]
+    r, prev = 3.3, "view"
+    for did, text, code in items:
+        c.dec(did, text, 0, r)
+        c.off(code, code, 1, r)
+        c.e(prev, did, "No" if prev != "view" else None)
+        c.e(did, code, "Yes", out="r", into="l")
+        prev, r = did, r + 1.45
+    c.dec("d_app", "Download Android App?", 0, r)
+    c.proc("app", "Download meras-user-app.apk", 1, r)
+    c.conn("c1b", "1", 2, r)
+    c.e(prev, "d_app", "No")
+    c.e("d_app", "app", "Yes", out="r", into="l")
+    c.e("app", "c1b", out="r", into="l")
+    r += 1.45
+    c.dec("d_out", "Sign Out?", 0, r)
+    c.proc("out", "Record Logout Activity; End Session", 1, r)
+    c.conn("D", "D", 2, r)
+    c.e("d_app", "d_out", "No")
+    c.e("d_out", "out", "Yes", out="r", into="l")
+    c.e("out", "D", out="r", into="l")
+    c.conn("c1c", "1", 0, r + 1.35)
+    c.e("d_out", "c1c", "No")
+
+
+# --------------------------------------------------------------------------- 7
+@chart("07-browse-products", "Flowchart 7. Browse Products (AH)", cw=300, rh=150)
+def browse(c):
+    entry(c, "AH", 'Load "Products" Section')
+    c.db("db", "products_db", 1, 1.7)
+    c.e("db", "view", out="l", into="r")
+    r = 3.3
+    prev = "view"
+    for k, (text, inp, res) in enumerate([
+        ("Search by Name or SKU?", "Input Product Name or SKU", "Display Matching Products"),
+        ("Filter by Category?", "Select Category", "Display Products in the Category"),
+    ]):
+        c.dec(f"d{k}", text, 0, r)
+        c.io(f"i{k}", inp, 1, r)
+        c.proc(f"p{k}", res, 2, r)
+        c.conn(f"k{k}", "1", 3, r)
+        c.e(prev, f"d{k}", "No" if prev != "view" else None)
+        c.e(f"d{k}", f"i{k}", "Yes", out="r", into="l")
+        c.e(f"i{k}", f"p{k}", out="r", into="l")
+        c.e(f"p{k}", f"k{k}", out="r", into="l")
+        prev, r = f"d{k}", r + 1.5
+    c.dec("d2", "Switch Display Mode?", 0, r)
+    c.proc("p2", "Toggle Grid View / DataTable View", 1, r)
+    c.conn("k2", "1", 2, r)
+    c.e(prev, "d2", "No")
+    c.e("d2", "p2", "Yes", out="r", into="l")
+    c.e("p2", "k2", out="r", into="l")
+    r += 1.5
+    c.dec("d3", "Ask Chatbot About a Product?", 0, r)
+    c.off("AJ", "AJ", 1, r)
+    c.e("d2", "d3", "No")
+    c.e("d3", "AJ", "Yes", out="r", into="l")
+    r += 1.5
+    c.dec("d4", "Back to Home Page?", 0, r)
+    c.conn("B", "B", 1, r)
+    c.e("d3", "d4", "No")
+    c.e("d4", "B", "Yes", out="r", into="l")
+    c.conn("k5", "1", 0, r + 1.35)
+    c.e("d4", "k5", "No")
+
+
+# --------------------------------------------------------------------------- 8
+@chart("08-send-inquiry", "Flowchart 8. Send Inquiry (AI)", cw=300, rh=150)
+def inquiry(c):
+    entry(c, "AI", 'View "Send Inquiry" Form')
+    c.io("inp", "Input Name, Email, Subject and Message", 0, 3.2)
+    c.e("view", "inp")
+    c.dec("d_val", "All Fields Valid?", 0, 4.8)
+    c.e("inp", "d_val")
+    c.proc("err", "Display Validation Error", 1, 4.8)
+    c.conn("c1b", "1", 2, 4.8)
+    c.e("d_val", "err", "No", out="r", into="l")
+    c.e("err", "c1b", out="r", into="l")
+    c.proc("att", "Attach User ID (if logged in) and Push Token (if mobile app)", 0, 6.4)
+    c.e("d_val", "att", "Yes")
+    c.db("db", "inquiries_db", 0, 7.95)
+    c.e("att", "db")
+    c.act("save", 'Save Inquiry (Status = "Pending")', 1, 7.95)
+    c.e("db", "save", out="r", into="l")
+    c.proc("log", "Record Activity Log", 1, 9.45)
+    c.e("save", "log")
+    c.proc("msg", 'Display "Inquiry submitted successfully"', 1, 10.85)
+    c.e("log", "msg")
+    c.conn("B", "B", 1, 12.1)
+    c.e("msg", "B")
+
+
+# --------------------------------------------------------------------------- 9
+@chart("09-chat-support", "Flowchart 9. Chat Support / Chatbot (AJ)", cw=300, rh=150)
+def chat(c):
+    entry(c, "AJ", "Open Chat Support (Chatbot Widget or Chat Page)")
+    c.dec("d_adm", "Role is Admin?", 0, 3.2)
+    c.e("view", "d_adm")
+    # admin chain (far right)
+    c.proc("a1", "Load All Messages, Recent Inquiries and Chat Statistics", 2, 3.2)
+    c.e("d_adm", "a1", "Yes", out="r", into="l")
+    c.io("a2", "Input Reply Message", 2, 4.7)
+    c.e("a1", "a2")
+    c.db("a3", "messages_db", 2, 6.2)
+    c.e("a2", "a3")
+    c.conn("ka", "1", 2, 7.5)
+    c.e("a3", "ka")
+    # customer / guest chain
+    c.io("inp", "Type a Message or Select a Suggestion Chip", 0, 4.8)
+    c.e("d_adm", "inp", "No")
+    c.dec("d_log", "Logged In?", 0, 6.3)
+    c.e("inp", "d_log")
+    c.db("sv", "messages_db (save message)", 1, 6.3)
+    c.e("d_log", "sv", "Yes", out="r", into="l")
+    c.proc("kw", "Match Keywords and Search Products (hours, location, payment, stock)", 0, 7.9)
+    c.e("d_log", "kw", "No")
+    c.e("sv", "kw", out="b", into="r")
+    c.dec("d_ans", "Answer Found?", 0, 9.5)
+    c.e("kw", "d_ans")
+    c.proc("rep", "Display Bot Reply, Matching Products and Suggestions", 1, 9.5)
+    c.e("d_ans", "rep", "Yes", out="r", into="l")
+    c.proc("hand", "Display Messenger Hand-off Link (Live Agent)", 0, 11.0)
+    c.e("d_ans", "hand", "No")
+    c.dec("d_more", "Send Another Message?", 0, 12.6)
+    c.e("hand", "d_more")
+    c.e("rep", "d_more", out="b", into="r")
+    c.conn("kb", "1", -1, 12.6)
+    c.e("d_more", "kb", "Yes", out="l", into="r")
+    c.conn("B", "B", 0, 14.0)
+    c.e("d_more", "B", "No")
+
+
+# -------------------------------------------------------------------------- 10
+@chart("10-profile-notifications", "Flowchart 10. My Profile and Notifications (AK)", cw=300, rh=150)
+def profile(c):
+    entry(c, "AK", 'Request "Profile" Page')
+    c.dec("d_log", "Logged In?", 0, 3.2)
+    c.off("AE", "AE", 1, 3.2)
+    c.e("view", "d_log")
+    c.e("d_log", "AE", "No", out="r", into="l")
+    c.proc("ld", "Load Customer's Inquiries (matched by email)", 0, 4.8)
+    c.db("db", "inquiries_db", 1, 4.8)
+    c.e("d_log", "ld", "Yes")
+    c.e("db", "ld", out="l", into="r")
+    c.proc("show", "Display Profile and Inquiry History (Pending / Responded)", 0, 6.5)
+    c.e("ld", "show")
+    c.dec("d_n", "View Notifications?", 0, 8.2)
+    c.e("show", "d_n")
+    c.proc("n1", 'Load Inquiries with Status "Responded"', 1, 8.2)
+    c.e("d_n", "n1", "Yes", out="r", into="l")
+    c.proc("n2", "Display Administrator Responses", 1, 9.7)
+    c.conn("k1", "1", 1, 10.95)
+    c.e("n1", "n2")
+    c.e("n2", "k1")
+    c.dec("d_b", "Back to Home Page?", 0, 9.8)
+    c.conn("B", "B", -1, 9.8)
+    c.e("d_n", "d_b", "No")
+    c.e("d_b", "B", "Yes", out="l", into="r")
+    c.conn("k2", "1", 0, 11.2)
+    c.e("d_b", "k2", "No")
+
+
+# -------------------------------------------------------------------------- 11
+@chart("11-mobile-app", "Flowchart 11. Mobile App Access (AC)", cw=300, rh=150)
+def mobile(c):
+    entry(c, "AC", "Open /user-app Route (Android Application)")
+    c.proc("flag", "Set Mobile-App Session Flag; Store Push (FCM) Token", 0, 3.2)
+    c.e("view", "flag")
+    c.proc("home", "Display Home Page in App Mode (Staff Links and App Download Hidden)", 0, 4.9)
+    c.e("flag", "home")
+    c.dec("d_log", "Log In or Sign in with Google?", 0, 6.7)
+    c.off("AE", "AE", 1, 6.7)
+    c.e("home", "d_log")
+    c.e("d_log", "AE", "Yes", out="r", into="l")
+    c.dec("d_use", "Use Customer Features? (Products, Inquiry, Chat)", 0, 8.4)
+    c.e("d_log", "d_use", "No")
+    c.off("AH", "AH", 1, 8.4)
+    c.e("d_use", "AH", "Yes", out="r", into="l")
+    c.conn("B", "B", 0, 9.9)
+    c.e("d_use", "B", "No")
+
+
+# -------------------------------------------------------------------------- 12
+@chart("12-admin-portal", "Flowchart 12. Administrator Portal (AA)", cw=300, rh=140)
+def admin_portal(c):
+    c.off("in", "AA", 0, 0)
+    c.dec("d_auth", "Authenticated as Admin?", 0, 1.5)
+    c.off("AE", "AE", 1, 1.5)
+    c.e("in", "d_auth")
+    c.e("d_auth", "AE", "No", out="r", into="l")
+    c.conn("c1", "1", -1, 2.5)
+    c.proc("view", 'View "Admin Portal" (Sidebar Menu)', 0, 3.1)
+    c.e("d_auth", "view", "Yes")
+    c.e("c1", "view", out="r", into="t")
+    items = [
+        ("Dashboard", "BA"), ("Point of Sale", "BB"), ("Inventory", "BC"),
+        ("Customer Inquiries", "BD"), ("Support Chat", "AJ"), ("Reports", "BE"),
+        ("Settings", "BG"), ("User Management", "BF"), ("Activity Logs", "BH"),
+    ]
+    r, prev = 4.6, "view"
+    for i, (text, code) in enumerate(items):
+        did, oid = f"d{i}", f"o{i}"
+        c.dec(did, text, 0, r)
+        c.off(oid, code, 1, r)
+        c.e(prev, did, None if prev == "view" else "No")
+        c.e(did, oid, "Yes", out="r", into="l")
+        prev, r = did, r + 1.4
+    c.dec("d_out", "Sign Out?", 0, r)
+    c.proc("out", "Record Logout Activity; End Session", 1, r)
+    c.conn("D", "D", 2, r)
+    c.e(prev, "d_out", "No")
+    c.e("d_out", "out", "Yes", out="r", into="l")
+    c.e("out", "D", out="r", into="l")
+    c.conn("c1b", "1", 0, r + 1.3)
+    c.e("d_out", "c1b", "No")

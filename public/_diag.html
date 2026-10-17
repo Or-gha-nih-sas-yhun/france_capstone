@@ -481,7 +481,7 @@
 
             <div class="inquiry-form-card">
                 <form method="POST" action="http://localhost/inquiries">
-                    <input type="hidden" name="_token" value="0jP9IuKGrQezGakf1hb7psssr8OMzzhZRi4saHXv" autocomplete="off">                    
+                    <input type="hidden" name="_token" value="WuLCSPB02TzEawMpRCvic3woAyGKczz0BaAZCOwA" autocomplete="off">                    
                     <div class="form-group" style="margin-bottom: 24px;">
                         <label for="customerName">Your Full Name</label>
                         <input type="text" name="customer_name" id="customerName" class="form-control-lp" required
@@ -1349,6 +1349,11 @@ function merasEsc(t) {
     return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 }
 
+// Escapes first, then shows **text** in bold and keeps line breaks
+function merasFormat(t) {
+    return merasEsc(t).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+}
+
 function merasScroll() {
     var b = document.getElementById('merasChatBody');
     if (b) b.scrollTop = b.scrollHeight;
@@ -1394,7 +1399,7 @@ function merasAppendBot(reply, products, suggestions, handoff, map) {
     var b = document.getElementById('merasChatBody');
     if (!b) return;
 
-    var html = merasEsc(reply).replace(/\n/g, '<br>');
+    var html = merasFormat(reply);
 
     if (products && products.length) {
         html += '<div class="meras-prod-grid">';
@@ -1481,7 +1486,7 @@ function merasSubmit(e) {
         headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'X-CSRF-TOKEN': '0jP9IuKGrQezGakf1hb7psssr8OMzzhZRi4saHXv'
+            'X-CSRF-TOKEN': 'WuLCSPB02TzEawMpRCvic3woAyGKczz0BaAZCOwA'
         },
         body: JSON.stringify({ message: txt })
     })

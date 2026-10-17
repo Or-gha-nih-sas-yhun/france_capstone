@@ -290,8 +290,8 @@
                                 <span class="chat-msg-time">{{ optional($message->created_at)->diffForHumans() ?? '' }}</span>
                             </div>
                             <div class="chat-bubble {{ $isOwn ? 'chat-bubble-own' : 'chat-bubble-other' }}">
-                                {{-- Escaped first, then bare URLs are linked so the bot's Messenger handoff is tappable. --}}
-                                {!! preg_replace('~https?://[^\s<]+~', '<a href="$0" target="_blank" rel="noopener noreferrer">$0</a>', e($message->message)) !!}
+                                {{-- Escaped first, then **text** is bolded and bare URLs are linked so the bot's Messenger handoff is tappable. --}}
+                                {!! preg_replace('~https?://[^\s<]+~', '<a href="$0" target="_blank" rel="noopener noreferrer">$0</a>', preg_replace('~\*\*(.+?)\*\*~', '<strong>$1</strong>', e($message->message))) !!}
                             </div>
                         </div>
                     </div>
@@ -351,12 +351,14 @@ function escapeHtml(value) {
         .replace(/'/g, '&#039;');
 }
 
-// Escapes first, then turns bare URLs into links so handoff links (e.g. the
-// Messenger one the bot offers) are tappable instead of plain text.
+// Escapes first, then shows **text** in bold and turns bare URLs into links so
+// handoff links (e.g. the Messenger one the bot offers) are tappable instead of plain text.
 function linkifyMessage(value) {
-    return escapeHtml(value).replace(/https?:\/\/[^\s<]+/g, function (url) {
-        return '<a href="' + url + '" target="_blank" rel="noopener noreferrer">' + url + '</a>';
-    });
+    return escapeHtml(value)
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/https?:\/\/[^\s<]+/g, function (url) {
+            return '<a href="' + url + '" target="_blank" rel="noopener noreferrer">' + url + '</a>';
+        });
 }
 
 function scrollToBottom() {

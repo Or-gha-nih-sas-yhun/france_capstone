@@ -686,6 +686,11 @@ function merasEsc(t) {
     return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
 }
 
+// Escapes first, then shows **text** in bold and keeps line breaks
+function merasFormat(t) {
+    return merasEsc(t).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+}
+
 function merasScroll() {
     var b = document.getElementById('merasChatBody');
     if (b) b.scrollTop = b.scrollHeight;
@@ -731,7 +736,7 @@ function merasAppendBot(reply, products, suggestions, handoff, map) {
     var b = document.getElementById('merasChatBody');
     if (!b) return;
 
-    var html = merasEsc(reply).replace(/\n/g, '<br>');
+    var html = merasFormat(reply);
 
     if (products && products.length) {
         html += '<div class="meras-prod-grid">';

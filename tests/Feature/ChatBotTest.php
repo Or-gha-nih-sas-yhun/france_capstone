@@ -223,7 +223,11 @@ class ChatBotTest extends TestCase
             $response = $this->postJson(route('chat.bot-response'), ['message' => $question]);
 
             $reply = $response->json('reply');
-            $this->assertStringContainsString("{$requested} is currently not available in our product catalog", $reply, $question);
+            $this->assertStringStartsWith(
+                "**🔍 Product Not Available:**\n**We're sorry, but {$requested} is currently not available in our product catalog.**",
+                $reply,
+                $question
+            );
             $this->assertStringNotContainsString('Thank you for your message', $reply, $question);
             $this->assertSame([], $response->json('products'), $question);
         }
@@ -392,6 +396,25 @@ class ChatBotTest extends TestCase
 
         $saved = Message::where('user_name', "Mera's Support Bot")->latest('id')->value('message');
         $this->assertStringContainsString('https://www.google.com/maps?cid=494545713299091420', $saved);
+    }
+
+    /** @test */
+    public function chat_page_shows_the_not_available_notice_in_bold()
+    {
+        $customer = User::create([
+            'name' => 'John Doe',
+            'email' => 'john@example.com',
+            'password' => Hash::make('password123'),
+            'role' => 'user',
+        ]);
+        $this->actingAs($customer);
+
+        $this->post(route('chat.store'), ['message' => 'do you have a laptop?']);
+
+        $response = $this->get(route('chat.index'));
+        $response->assertSee('<strong>🔍 Product Not Available:</strong>', false);
+        $response->assertSee('<strong>We&#039;re sorry, but &quot;Laptop&quot; is currently not available in our product catalog.</strong>', false);
+        $response->assertDontSee('**🔍', false);
     }
 
     /** @test */

@@ -464,7 +464,8 @@ class ChatController extends Controller
             ? '"' . ucwords(implode(' ', $nameTokens)) . '"'
             : 'the item you are looking for';
 
-        $reply = "🔍 Product Not Available:\nWe're sorry, but {$requested} is currently not available in our product catalog.";
+        // **text** is shown in bold by the chat widget and the chat page
+        $reply = "**🔍 Product Not Available:**\n**We're sorry, but {$requested} is currently not available in our product catalog.**";
         $productItems = [];
 
         if (count($similarProducts) > 0) {

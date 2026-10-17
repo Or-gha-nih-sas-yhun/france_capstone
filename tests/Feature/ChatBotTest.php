@@ -322,8 +322,7 @@ class ChatBotTest extends TestCase
         $response->assertStatus(200);
         $this->assertStringContainsString('Stall No. 18, Bantayan Public Market', $response->json('reply'));
         $this->assertSame('Open in Google Maps', $response->json('map.label'));
-        $this->assertStringStartsWith('https://www.google.com/maps/search/?api=1&query=', $response->json('map.url'));
-        $this->assertStringContainsString('Bantayan+Public+Market', $response->json('map.url'));
+        $this->assertSame('https://www.google.com/maps?cid=494545713299091420', $response->json('map.url'));
 
         // Other answers carry no map
         $this->assertNull($this->postJson(route('chat.bot-response'), ['message' => 'what are your hours?'])->json('map'));
@@ -343,7 +342,7 @@ class ChatBotTest extends TestCase
         $this->postJson(route('chat.bot-response'), ['message' => 'where are you located?']);
 
         $saved = Message::where('user_name', "Mera's Support Bot")->latest('id')->value('message');
-        $this->assertStringContainsString('https://www.google.com/maps/search/?api=1&query=', $saved);
+        $this->assertStringContainsString('https://www.google.com/maps?cid=494545713299091420', $saved);
     }
 
     /** @test */

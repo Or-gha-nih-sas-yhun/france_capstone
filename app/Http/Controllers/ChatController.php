@@ -17,20 +17,21 @@ class ChatController extends Controller
     /** Number of customer messages after which the Messenger handoff is offered. */
     public const HANDOFF_AFTER_MESSAGES = 3;
 
-    /** Store address, and the place Google Maps searches for when customers open the location. */
     public const STORE_ADDRESS = 'Stall No. 18, Bantayan Public Market, Suba, Bantayan, Cebu 6052';
-    public const STORE_MAPS_QUERY = 'Bantayan Public Market, Bantayan, Cebu 6052';
 
     /**
-     * Google Maps URLs API link: opens the Maps app on phones and maps.google.com
-     * on desktop, and needs no API key.
+     * The store's own Google Maps listing ("Mera's General Merchandise", pinned at
+     * 11.1659383, 123.7176784). Opens the Maps app on phones and Google Maps on
+     * desktop, and needs no API key.
      */
+    public const STORE_MAPS_URL = 'https://www.google.com/maps?cid=494545713299091420';
+
     public static function getStoreMap(): array
     {
         return [
             'label' => 'Open in Google Maps',
             'address' => self::STORE_ADDRESS,
-            'url' => 'https://www.google.com/maps/search/?api=1&query=' . urlencode(self::STORE_MAPS_QUERY),
+            'url' => self::STORE_MAPS_URL,
         ];
     }
 

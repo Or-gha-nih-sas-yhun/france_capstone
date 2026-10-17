@@ -536,6 +536,53 @@ a.meras-prod-card:hover .meras-prod-name {
     text-decoration: none !important;
 }
 
+/* Store location card */
+.meras-map {
+    margin-top: 10px !important;
+    padding: 10px !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 10px !important;
+    background: #f8fafc !important;
+}
+
+.meras-map-address {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 6px !important;
+    font-size: 0.8rem !important;
+    line-height: 1.45 !important;
+    color: #1e293b !important;
+    margin-bottom: 9px !important;
+}
+
+.meras-map-address svg {
+    flex-shrink: 0 !important;
+    margin-top: 1px !important;
+}
+
+.meras-map-btn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    padding: 9px 12px !important;
+    border-radius: 8px !important;
+    background: #1a73e8 !important;
+    color: #fff !important;
+    font-size: 0.82rem !important;
+    font-weight: 700 !important;
+    text-decoration: none !important;
+    box-shadow: 0 2px 6px rgba(26, 115, 232, 0.28) !important;
+    transition: filter 0.15s, transform 0.15s !important;
+}
+
+.meras-map-btn:hover {
+    filter: brightness(1.07) !important;
+    transform: translateY(-1px) !important;
+    color: #fff !important;
+    text-decoration: none !important;
+}
+
 /* Input */
 .meras-chat-form {
     display: flex !important;
@@ -679,7 +726,7 @@ function merasRemoveTyping() {
     if (t) t.remove();
 }
 
-function merasAppendBot(reply, products, suggestions, handoff) {
+function merasAppendBot(reply, products, suggestions, handoff, map) {
     merasRemoveTyping();
     var b = document.getElementById('merasChatBody');
     if (!b) return;
@@ -714,6 +761,17 @@ function merasAppendBot(reply, products, suggestions, handoff) {
             }
         });
         html += '</div>';
+    }
+
+    // Store location: opens Google Maps (the app on phones) for directions
+    if (map && map.url) {
+        html += '<div class="meras-map">' +
+            '<div class="meras-map-address">' +
+            '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="#ea4335" aria-hidden="true">' +
+            '<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z"/>' +
+            '</svg><span>' + merasEsc(map.address) + '</span></div>' +
+            '<a class="meras-map-btn" href="' + merasEsc(map.url) + '" target="_blank" rel="noopener noreferrer">' +
+            merasEsc(map.label) + ' &rarr;</a></div>';
     }
 
     // Offered once, after the customer has sent a few messages, so they can reach
@@ -767,7 +825,7 @@ function merasSubmit(e) {
     .then(function(r) { return r.json(); })
     .then(function(data) {
         if (data && data.reply) {
-            merasAppendBot(data.reply, data.products || [], data.suggestions || [], data.handoff || null);
+            merasAppendBot(data.reply, data.products || [], data.suggestions || [], data.handoff || null, data.map || null);
         } else {
             merasAppendBot("Sorry, I couldn't get a response right now. Please try again!", [], [], null);
         }

@@ -315,6 +315,38 @@ class ChatBotTest extends TestCase
     }
 
     /** @test */
+    public function location_reply_includes_a_google_maps_link_to_the_store()
+    {
+        $response = $this->postJson(route('chat.bot-response'), ['message' => 'Where is your store located?']);
+
+        $response->assertStatus(200);
+        $this->assertStringContainsString('Stall No. 18, Bantayan Public Market', $response->json('reply'));
+        $this->assertSame('Open in Google Maps', $response->json('map.label'));
+        $this->assertStringStartsWith('https://www.google.com/maps/search/?api=1&query=', $response->json('map.url'));
+        $this->assertStringContainsString('Bantayan+Public+Market', $response->json('map.url'));
+
+        // Other answers carry no map
+        $this->assertNull($this->postJson(route('chat.bot-response'), ['message' => 'what are your hours?'])->json('map'));
+    }
+
+    /** @test */
+    public function saved_location_reply_keeps_the_map_link_for_the_chat_history()
+    {
+        $customer = User::create([
+            'name' => 'John Doe',
+            'email' => 'john@example.com',
+            'password' => Hash::make('password123'),
+            'role' => 'user',
+        ]);
+        $this->actingAs($customer);
+
+        $this->postJson(route('chat.bot-response'), ['message' => 'where are you located?']);
+
+        $saved = Message::where('user_name', "Mera's Support Bot")->latest('id')->value('message');
+        $this->assertStringContainsString('https://www.google.com/maps/search/?api=1&query=', $saved);
+    }
+
+    /** @test */
     public function customer_asking_about_messenger_immediately_receives_live_handoff()
     {
         $response = $this->postJson(route('chat.bot-response'), [

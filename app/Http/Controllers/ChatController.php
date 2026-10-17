@@ -17,6 +17,32 @@ class ChatController extends Controller
     /** Number of customer messages after which the Messenger handoff is offered. */
     public const HANDOFF_AFTER_MESSAGES = 3;
 
+    /** Store address, and the place Google Maps searches for when customers open the location. */
+    public const STORE_ADDRESS = 'Stall No. 18, Bantayan Public Market, Suba, Bantayan, Cebu 6052';
+    public const STORE_MAPS_QUERY = 'Bantayan Public Market, Bantayan, Cebu 6052';
+
+    /**
+     * Google Maps URLs API link: opens the Maps app on phones and maps.google.com
+     * on desktop, and needs no API key.
+     */
+    public static function getStoreMap(): array
+    {
+        return [
+            'label' => 'Open in Google Maps',
+            'address' => self::STORE_ADDRESS,
+            'url' => 'https://www.google.com/maps/search/?api=1&query=' . urlencode(self::STORE_MAPS_QUERY),
+        ];
+    }
+
+    /**
+     * Bot reply as saved to the conversation history, where bare URLs are linked,
+     * so the store's map link stays clickable there too.
+     */
+    private function storedBotReply(array $botData): string
+    {
+        return $botData['reply'] . (!empty($botData['map']) ? "\n" . $botData['map']['url'] : '');
+    }
+
     public static function getMessengerHandoff(?string $customText = null): array
     {
         return [
@@ -148,12 +174,11 @@ class ChatController extends Controller
         if ($user->role === 'user') {
             $userMessage = $request->input('message');
             $botData = $this->getDetailedBotResponse($userMessage);
-            $botReply = $botData['reply'];
 
-            if ($botReply) {
+            if ($botData['reply']) {
                 Message::create([
                     'user_name' => "Mera's Support Bot",
-                    'message' => $botReply,
+                    'message' => $this->storedBotReply($botData),
                 ]);
             }
 
@@ -198,7 +223,7 @@ class ChatController extends Controller
         if (auth()->check()) {
             Message::create([
                 'user_name' => "Mera's Support Bot",
-                'message' => $botData['reply'],
+                'message' => $this->storedBotReply($botData),
             ]);
 
             if ($handoff) {
@@ -215,6 +240,7 @@ class ChatController extends Controller
             'reply' => $botData['reply'],
             'suggestions' => $botData['suggestions'],
             'products' => $botData['products'] ?? [],
+            'map' => $botData['map'] ?? null,
             'handoff' => $handoff,
         ]);
     }
@@ -286,8 +312,9 @@ class ChatController extends Controller
         // Location/address intents
         if (str_contains($lowerMsg, 'where') || str_contains($lowerMsg, 'location') || str_contains($lowerMsg, 'address') || str_contains($lowerMsg, 'find') || str_contains($lowerMsg, 'stall') || str_contains($lowerMsg, 'place') || str_contains($lowerMsg, 'direction')) {
             return [
-                'reply' => "📍 Our Location:\nYou can find us at Stall No. 18, Bantayan Public Market, Suba, Bantayan, Cebu 6052. Drop by and say hello! 😊",
+                'reply' => "📍 Our Location:\nYou can find us at " . self::STORE_ADDRESS . ". Drop by and say hello! 😊\n\nTap the button below to get directions on Google Maps.",
                 'suggestions' => ["Store Hours 🕒", "Check Products 🛍️", "Payment Methods 💳"],
+                'map' => self::getStoreMap(),
             ];
         }
 

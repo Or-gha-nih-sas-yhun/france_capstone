@@ -162,6 +162,133 @@ class ChatBotTest extends TestCase
         $this->assertEquals('Yellow Pad Paper 80 Leaves', $responseData['products'][0]['name']);
     }
 
+    private function seedSchoolSupplies(): void
+    {
+        \App\Models\Product::create([
+            'sku' => 'SCH-FC-PENCIL',
+            'name' => 'Faber-Castell 2B Pencil',
+            'category' => 'School Supplies',
+            'price' => 95.00,
+            'quantity' => 50,
+        ]);
+        \App\Models\Product::create([
+            'sku' => 'SCH-FC-ERASER',
+            'name' => 'Faber-Castell Dust-Free Eraser',
+            'category' => 'School Supplies',
+            'price' => 22.00,
+            'quantity' => 100,
+        ]);
+        \App\Models\Product::create([
+            'sku' => 'SCH-BALLPEN-BLU',
+            'name' => 'Blue Ballpen',
+            'category' => 'School Supplies',
+            'price' => 12.00,
+            'quantity' => 80,
+        ]);
+        \App\Models\Product::create([
+            'sku' => 'HH-DET-BAR',
+            'name' => 'Detergent Bar',
+            'category' => 'Household',
+            'price' => 25.00,
+            'quantity' => 100,
+        ]);
+    }
+
+    /** @test */
+    public function bot_states_a_product_is_not_available_when_the_store_does_not_carry_it()
+    {
+        $this->seedSchoolSupplies();
+
+        foreach (['do you have a laptop?', 'how much is the laptop?', 'Hi! Do you have laptops available?'] as $question) {
+            $response = $this->postJson(route('chat.bot-response'), ['message' => $question]);
+
+            $response->assertStatus(200);
+            $reply = $response->json('reply');
+
+            $this->assertStringContainsString('is currently not available in our product catalog', $reply, $question);
+            $this->assertStringContainsString('Laptop', $reply, $question);
+            $this->assertStringNotContainsString('Featured Store Products', $reply, $question);
+            $this->assertStringNotContainsString('Welcome to', $reply, $question);
+            $this->assertStringContainsString('School Supplies, Household', $reply, $question);
+            $this->assertSame([], $response->json('products'), $question);
+        }
+    }
+
+    /** @test */
+    public function bot_does_not_pass_off_a_look_alike_word_as_the_requested_product()
+    {
+        $this->seedSchoolSupplies();
+
+        // "glue" is one letter away from "blue" but is not the Blue Ballpen
+        $response = $this->postJson(route('chat.bot-response'), ['message' => 'do you have glue?']);
+
+        $this->assertStringContainsString('"Glue" is currently not available', $response->json('reply'));
+        $this->assertSame([], $response->json('products'));
+    }
+
+    /** @test */
+    public function bot_offers_similar_items_when_only_part_of_the_request_matches()
+    {
+        $this->seedSchoolSupplies();
+
+        $response = $this->postJson(route('chat.bot-response'), [
+            'message' => 'do you have faber castell crayons?'
+        ]);
+
+        $response->assertStatus(200);
+        $reply = $response->json('reply');
+
+        $this->assertStringContainsString('"Faber Castell Crayons" is currently not available', $reply);
+        $this->assertStringContainsString('similar items', $reply);
+        $this->assertStringNotContainsString('Matching Products Found', $reply);
+
+        $names = array_column($response->json('products'), 'name');
+        $this->assertNotEmpty($names);
+        foreach ($names as $name) {
+            $this->assertStringStartsWith('Faber-Castell', $name);
+        }
+    }
+
+    /** @test */
+    public function bot_still_answers_with_the_product_when_it_is_carried()
+    {
+        $this->seedSchoolSupplies();
+
+        $response = $this->postJson(route('chat.bot-response'), ['message' => 'Hello, do you have 10 erasers?']);
+
+        $this->assertStringNotContainsString('not available', $response->json('reply'));
+        $this->assertSame(['Faber-Castell Dust-Free Eraser'], array_column($response->json('products'), 'name'));
+    }
+
+    /** @test */
+    public function bot_says_a_carried_product_is_out_of_stock()
+    {
+        \App\Models\Product::create([
+            'sku' => 'OFF-STAPLER',
+            'name' => 'Heavy Duty Stapler',
+            'category' => 'Office Supplies',
+            'price' => 150.00,
+            'quantity' => 0,
+        ]);
+
+        $response = $this->postJson(route('chat.bot-response'), ['message' => 'is the stapler available?']);
+
+        $reply = $response->json('reply');
+        $this->assertStringContainsString('Heavy Duty Stapler', $reply);
+        $this->assertStringContainsString('currently out of stock', $reply);
+    }
+
+    /** @test */
+    public function general_product_questions_still_list_featured_products()
+    {
+        $this->seedSchoolSupplies();
+
+        $response = $this->postJson(route('chat.bot-response'), ['message' => 'What products are in stock?']);
+
+        $this->assertStringContainsString('Featured Store Products', $response->json('reply'));
+        $this->assertNotEmpty($response->json('products'));
+    }
+
     /** @test */
     public function customer_asking_about_messenger_immediately_receives_live_handoff()
     {

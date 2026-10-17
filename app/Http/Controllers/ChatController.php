@@ -249,8 +249,22 @@ class ChatController extends Controller
             ];
         }
 
+        // Product inquiry signals are read up front so "Hi, do you have laptops?" is
+        // answered as a product question instead of a plain greeting.
+        $queryTokens = $this->extractQueryTokens($lowerMsg);
+        $hasProductIntent = str_contains($lowerMsg, 'product') || str_contains($lowerMsg, 'item') || str_contains($lowerMsg, 'price')
+            || str_contains($lowerMsg, 'stock') || str_contains($lowerMsg, 'quantity') || str_contains($lowerMsg, 'qty')
+            || str_contains($lowerMsg, 'how much') || str_contains($lowerMsg, 'how many') || str_contains($lowerMsg, 'cost')
+            || str_contains($lowerMsg, 'available') || str_contains($lowerMsg, 'availability') || str_contains($lowerMsg, 'left')
+            || str_contains($lowerMsg, 'inventory') || str_contains($lowerMsg, 'buy') || str_contains($lowerMsg, 'sell')
+            || str_contains($lowerMsg, 'fabric') || str_contains($lowerMsg, 'bag') || str_contains($lowerMsg, 'supply')
+            || str_contains($lowerMsg, 'notebook') || str_contains($lowerMsg, 'pen') || str_contains($lowerMsg, 'order')
+            || str_contains($lowerMsg, 'eraser') || str_contains($lowerMsg, 'pencil') || str_contains($lowerMsg, 'faber')
+            || preg_match('/\b(do (you|u) (still )?(have|sell|carry|offer)|(have|got) any|is there|are there|looking for|searching for|can i (get|buy|order)|i (need|want))\b/', $lowerMsg) === 1;
+
         // Greeting intents
-        if (preg_match('/\b(hi|hello|hey|greetings|good morning|good afternoon|good evening|hello bot|help|start)\b/', $lowerMsg)) {
+        if (preg_match('/\b(hi|hello|hey|greetings|good morning|good afternoon|good evening|hello bot|help|start)\b/', $lowerMsg)
+            && !($hasProductIntent && !empty($queryTokens))) {
             return [
                 'reply' => "Hello! 👋 Welcome to Mera's Merchandise support assistant. How can I help you today? You can ask me about our products, store hours, location, or payment options.",
                 'suggestions' => $defaultSuggestions,
@@ -290,74 +304,57 @@ class ChatController extends Controller
         }
 
         // Product inventory search
-        $hasProductIntent = str_contains($lowerMsg, 'product') || str_contains($lowerMsg, 'item') || str_contains($lowerMsg, 'price')
-            || str_contains($lowerMsg, 'stock') || str_contains($lowerMsg, 'quantity') || str_contains($lowerMsg, 'qty')
-            || str_contains($lowerMsg, 'how much') || str_contains($lowerMsg, 'how many') || str_contains($lowerMsg, 'cost')
-            || str_contains($lowerMsg, 'available') || str_contains($lowerMsg, 'availability') || str_contains($lowerMsg, 'left')
-            || str_contains($lowerMsg, 'inventory') || str_contains($lowerMsg, 'buy') || str_contains($lowerMsg, 'sell')
-            || str_contains($lowerMsg, 'fabric') || str_contains($lowerMsg, 'bag') || str_contains($lowerMsg, 'supply')
-            || str_contains($lowerMsg, 'notebook') || str_contains($lowerMsg, 'pen') || str_contains($lowerMsg, 'order')
-            || str_contains($lowerMsg, 'eraser') || str_contains($lowerMsg, 'pencil') || str_contains($lowerMsg, 'faber');
-
         $allProducts = Product::all();
-        $matchedProducts = $this->searchProductsByRelevance($lowerMsg, $allProducts);
+        $matches = $this->searchProductsByRelevance($lowerMsg, $queryTokens, $allProducts);
+        $exactMatches = $matches['exact'];
 
-        if ($hasProductIntent || count($matchedProducts) > 0) {
-            if (count($matchedProducts) > 0) {
-                $productItems = [];
-                $isSingle = count($matchedProducts) === 1;
+        // Only products that match everything the customer asked for are presented as the answer
+        if (count($exactMatches) > 0) {
+            $productItems = [];
 
-                if ($isSingle) {
-                    $p = $matchedProducts[0];
-                    $unit = $p->unit ?: 'pcs';
-                    $status = $p->quantity > 10 ? "🟢 In Stock" : ($p->quantity > 0 ? "🟡 Low Stock ({$p->quantity} left)" : "🔴 Out of Stock");
+            if (count($exactMatches) === 1) {
+                $p = $exactMatches[0];
+                $card = $this->productCard($p);
+                $unit = $card['unit'];
 
-                    $productListMsg = "🛍️ {$p->name}:\n"
-                        . "• Price: ₱" . number_format($p->price, 2) . " / {$unit}\n"
-                        . "• Quantity: {$p->quantity} {$unit} ({$status})\n";
+                $productListMsg = "🛍️ {$p->name}:\n"
+                    . "• Price: ₱" . number_format($p->price, 2) . " / {$unit}\n"
+                    . "• Quantity: {$p->quantity} {$unit} ({$card['status']})\n";
 
-                    if ($p->hasBulkPricing()) {
-                        $productListMsg .= "• Bulk Price: ₱" . number_format($p->bulk_price, 2) . " (at {$p->bulk_min_qty}+ {$unit})\n";
-                    }
-                    $productListMsg .= "\n👉 Click on the product card below to view and purchase this item directly in the catalog!";
-
-                    $productItems[] = [
-                        'id' => $p->id,
-                        'name' => $p->name,
-                        'price' => '₱' . number_format($p->price, 2),
-                        'quantity' => $p->quantity,
-                        'unit' => $unit,
-                        'status' => $status,
-                        'category' => $p->category ?? 'Merchandise',
-                        'url' => route('home') . '#product-' . $p->id,
-                    ];
-                } else {
-                    $productListMsg = "🛍️ Matching Products Found:\n";
-                    foreach (array_slice($matchedProducts, 0, 4) as $p) {
-                        $unit = $p->unit ?: 'pcs';
-                        $status = $p->quantity > 10 ? "🟢 In Stock" : ($p->quantity > 0 ? "🟡 Low Stock ({$p->quantity} left)" : "🔴 Out of Stock");
-                        $productListMsg .= "• {$p->name} — ₱" . number_format($p->price, 2) . " ({$p->quantity} {$unit} left, {$status})\n";
-                        $productItems[] = [
-                            'id' => $p->id,
-                            'name' => $p->name,
-                            'price' => '₱' . number_format($p->price, 2),
-                            'quantity' => $p->quantity,
-                            'unit' => $unit,
-                            'status' => $status,
-                            'category' => $p->category ?? 'Merchandise',
-                            'url' => route('home') . '#product-' . $p->id,
-                        ];
-                    }
-                    $productListMsg .= "\n👉 Click on any item below to view it directly in our catalog!";
+                if ($p->hasBulkPricing()) {
+                    $productListMsg .= "• Bulk Price: ₱" . number_format($p->bulk_price, 2) . " (at {$p->bulk_min_qty}+ {$unit})\n";
                 }
 
-                return [
-                    'reply' => $productListMsg,
-                    'suggestions' => ["Store Hours 🕒", "Location 📍", "Payment Methods 💳"],
-                    'products' => $productItems,
-                ];
+                if ($p->quantity > 0) {
+                    $productListMsg .= "\n👉 Click on the product card below to view and purchase this item directly in the catalog!";
+                } else {
+                    $productListMsg .= "\nWe're sorry, but this item is currently out of stock. Please check back with us soon, or contact our team on Messenger for restocking updates.";
+                }
+
+                $productItems[] = $card;
+            } else {
+                $productListMsg = "🛍️ Matching Products Found:\n";
+                foreach (array_slice($exactMatches, 0, 4) as $p) {
+                    $card = $this->productCard($p);
+                    $productListMsg .= "• {$p->name} — ₱" . number_format($p->price, 2) . " ({$p->quantity} {$card['unit']} left, {$card['status']})\n";
+                    $productItems[] = $card;
+                }
+                $productListMsg .= "\n👉 Click on any item below to view it directly in our catalog!";
             }
 
+            return [
+                'reply' => $productListMsg,
+                'suggestions' => ["Store Hours 🕒", "Location 📍", "Payment Methods 💳"],
+                'products' => $productItems,
+            ];
+        }
+
+        // A specific item was asked for but the store does not carry it
+        if (count($matches['similar']) > 0 || ($hasProductIntent && !empty($queryTokens))) {
+            return $this->productNotAvailableResponse($queryTokens, $matches['similar'], $allProducts);
+        }
+
+        if ($hasProductIntent) {
             // Featured items if general product intent without specific match
             $featured = Product::where('quantity', '>', 0)->limit(4)->get();
             $featuredMsg = "🛍️ Featured Store Products:\n";
@@ -394,20 +391,69 @@ class ChatController extends Controller
     }
 
     /**
-     * Search products using intelligent multi-term relevance scoring and typo tolerance.
-     * Accurately ranks specific items (e.g. "Faber-Castell Eraser" for "faber castel eraser")
-     * first on the list ahead of general brand or category matches. Applicable to all queries.
+     * Professional reply for a product the store does not carry. Lists the closest
+     * items it does carry when there are any, otherwise the categories on offer.
      */
-    private function searchProductsByRelevance(string $message, $allProducts): array
+    private function productNotAvailableResponse(array $queryTokens, array $similarProducts, $allProducts): array
     {
-        $normalizedMsg = strtolower(trim($message));
-        $cleanMsg = preg_replace('/[^a-z0-9 ]+/', ' ', $normalizedMsg);
-        $cleanMsg = preg_replace('/\s+/', ' ', trim($cleanMsg ?? ''));
+        $nameTokens = $this->requiredTokens($queryTokens);
+        $requested = (count($nameTokens) > 0 && count($nameTokens) <= 5)
+            ? '"' . ucwords(implode(' ', $nameTokens)) . '"'
+            : 'the item you are looking for';
 
-        if (empty($cleanMsg)) {
-            return [];
+        $reply = "🔍 Product Not Available:\nWe're sorry, but {$requested} is currently not available in our product catalog.";
+        $productItems = [];
+
+        if (count($similarProducts) > 0) {
+            $reply .= "\n\nYou may be interested in these similar items that we carry:\n";
+            foreach (array_slice($similarProducts, 0, 4) as $p) {
+                $card = $this->productCard($p);
+                $reply .= "• {$p->name} — {$card['price']} ({$card['status']})\n";
+                $productItems[] = $card;
+            }
+            $reply .= "\n👉 Click on any item below to view it in our catalog, or contact our team on Messenger if you need further assistance.";
+        } else {
+            $categories = $allProducts->pluck('category')->filter()->unique()->take(6)->implode(', ');
+            if ($categories !== '') {
+                $reply .= "\n\nWe currently offer products under the following categories: {$categories}.";
+            }
+            $reply .= "\n\nYou are welcome to browse our available products, or contact our team on Messenger if you would like to inquire further about this item.";
         }
 
+        return [
+            'reply' => $reply,
+            'suggestions' => ["Check Products 🛍️", "Messenger 💬", "Store Hours 🕒"],
+            'products' => $productItems,
+        ];
+    }
+
+    private function productCard(Product $p): array
+    {
+        return [
+            'id' => $p->id,
+            'name' => $p->name,
+            'price' => '₱' . number_format($p->price, 2),
+            'quantity' => $p->quantity,
+            'unit' => $p->unit ?: 'pcs',
+            'status' => $p->quantity > 10 ? "🟢 In Stock" : ($p->quantity > 0 ? "🟡 Low Stock ({$p->quantity} left)" : "🔴 Out of Stock"),
+            'category' => $p->category ?? 'Merchandise',
+            'url' => route('home') . '#product-' . $p->id,
+        ];
+    }
+
+    private function normalizeSearchText(string $text): string
+    {
+        $clean = preg_replace('/[^a-z0-9 ]+/', ' ', strtolower($text));
+
+        return preg_replace('/\s+/', ' ', trim($clean ?? '')) ?? '';
+    }
+
+    /**
+     * Keep only the words that describe what the customer is looking for, dropping
+     * greetings, courtesy words, fillers and shopping verbs.
+     */
+    private function extractQueryTokens(string $message): array
+    {
         // Noise / Stop words to exclude from keyword comparison
         $stopWords = [
             'do', 'you', 'have', 'are', 'there', 'any', 'is', 'the', 'a', 'an', 'in', 'on', 'at',
@@ -415,122 +461,213 @@ class ChatController extends Controller
             'want', 'looking', 'find', 'buy', 'sell', 'how', 'much', 'many', 'cost', 'price',
             'pricing', 'available', 'availability', 'stock', 'store', 'product', 'products',
             'item', 'items', 'merchandise', 'what', 'which', 'who', 'where', 'when', 'why',
-            'check', 'search', 'give', 'tell', 'about', 'need', 'would', 'like'
+            'check', 'search', 'give', 'tell', 'about', 'need', 'would', 'like',
+            // Greetings, courtesy words and fillers
+            'hi', 'hello', 'hey', 'good', 'day', 'morning', 'afternoon', 'evening', 'help',
+            'sir', 'maam', 'ma', 'am', 'madam', 'miss', 'po', 'pls', 'plz', 'kindly', 'thanks', 'thank',
+            'ok', 'okay', 'yes', 'yeah', 'no', 'not', 'just', 'only', 'also', 'too', 'so', 'very', 'really',
+            'still', 'yet', 'now', 'today', 'currently', 'right', 'some', 'anything', 'something', 'else',
+            'other', 'more', 'one', 'ones', 'kind', 'kinds', 'sort', 'if', 'but', 'from', 'by', 'as',
+            // Pronouns and helper verbs
+            'ur', 'your', 'yours', 'we', 'us', 'our', 'my', 'it', 'its', 'im', 'this', 'that', 'these', 'those',
+            'here', 'be', 'been', 'was', 'were', 'does', 'did', 'has', 'had', 'got', 'will', 'could', 'should',
+            'may', 'might', 'don', 'dont', 'isn', 'aren', 'doesn', 'let', 'know', 'see', 'ask', 'asking', 'inquire',
+            // Shopping verbs, stock and quantity words
+            'selling', 'sells', 'sold', 'sale', 'carry', 'carries', 'offer', 'offers', 'stocks', 'left',
+            'remaining', 'quantity', 'qty', 'inventory', 'prices', 'costs', 'order', 'orders', 'purchase',
+            'searching', 'pc', 'pcs', 'piece', 'pieces',
         ];
         $stopWordsLookup = array_flip($stopWords);
 
-        $rawTokens = explode(' ', $cleanMsg);
-        $queryTokens = [];
-        foreach ($rawTokens as $tok) {
-            $tok = trim($tok);
+        $tokens = [];
+        foreach (explode(' ', $this->normalizeSearchText($message)) as $tok) {
             if (strlen($tok) >= 2 && !isset($stopWordsLookup[$tok])) {
-                $queryTokens[] = $tok;
+                $tokens[] = $tok;
             }
         }
 
-        if (empty($queryTokens)) {
-            return [];
+        return array_values(array_unique($tokens));
+    }
+
+    /**
+     * Bare numbers ("10 erasers") are usually quantities, so they only have to match
+     * when nothing else was asked for.
+     */
+    private function requiredTokens(array $queryTokens): array
+    {
+        $words = array_values(array_filter($queryTokens, fn ($t) => !ctype_digit((string) $t)));
+
+        return count($words) > 0 ? $words : $queryTokens;
+    }
+
+    private function singularize(string $word): string
+    {
+        $len = strlen($word);
+
+        if ($len > 4 && str_ends_with($word, 'ies')) {
+            return substr($word, 0, -3) . 'y';
+        }
+        if ($len > 3 && preg_match('/(s|x|z|ch|sh)es$/', $word)) {
+            return substr($word, 0, -2);
+        }
+        if ($len > 3 && str_ends_with($word, 's') && !str_ends_with($word, 'ss')) {
+            return substr($word, 0, -1);
         }
 
+        return $word;
+    }
+
+    /**
+     * Score how well a query word matches one product word. Strong matches (26+) are
+     * the same word or its plural, a near-complete prefix ("castel" / "castell") or a
+     * small typo in a longer word. Weak matches (18) are a short prefix ("pen" / "pencil")
+     * or the end of a compound word ("pen" / "ballpen"): close enough to suggest as a
+     * similar item, but not enough to claim it is the product that was asked for.
+     */
+    private function wordMatchScore(string $token, string $word): int
+    {
+        if ($word === '') {
+            return 0;
+        }
+
+        $singularToken = $this->singularize($token);
+        $singularWord = $this->singularize($word);
+
+        if ($token === $word || $singularToken === $singularWord) {
+            return 40;
+        }
+
+        $shorter = min(strlen($token), strlen($word));
+        $longer = max(strlen($token), strlen($word));
+        $isPrefix = str_starts_with($word, $token) || str_starts_with($token, $word);
+
+        if ($isPrefix && $shorter >= 3 && $shorter / $longer >= 0.6) {
+            return 28;
+        }
+
+        // Typo tolerance: Levenshtein distance <= 1 for 5-6 char words, <= 2 for 7+ chars.
+        // The first letter must agree so "glue" never passes for "blue".
+        $qLen = strlen($token);
+        if ($qLen >= 5 && $token[0] === $word[0] && levenshtein($token, $word) <= ($qLen >= 7 ? 2 : 1)) {
+            return 26;
+        }
+
+        if ($isPrefix && $shorter >= 3) {
+            return 18;
+        }
+
+        if (strlen($singularToken) >= 3 && strlen($word) - strlen($singularToken) >= 3 && str_ends_with($word, $singularToken)) {
+            return 18;
+        }
+
+        return 0;
+    }
+
+    /**
+     * Search products using intelligent multi-term relevance scoring and typo tolerance.
+     * Accurately ranks specific items (e.g. "Faber-Castell Eraser" for "faber castel eraser")
+     * first on the list ahead of general brand or category matches. Applicable to all queries.
+     *
+     * Returns 'exact' products that match every word the customer asked for, and
+     * 'similar' products that only match some of them, each ranked by relevance.
+     */
+    private function searchProductsByRelevance(string $message, array $queryTokens, $allProducts): array
+    {
+        $result = ['exact' => [], 'similar' => []];
+        $cleanMsg = $this->normalizeSearchText($message);
+
+        if ($cleanMsg === '' || empty($queryTokens)) {
+            return $result;
+        }
+
+        $requiredTokens = $this->requiredTokens($queryTokens);
         $totalTokens = count($queryTokens);
         $scored = [];
 
         foreach ($allProducts as $p) {
-            $pNameNorm = preg_replace('/[^a-z0-9 ]+/', ' ', strtolower($p->name));
-            $pNameNorm = preg_replace('/\s+/', ' ', trim($pNameNorm ?? ''));
+            $pNameNorm = $this->normalizeSearchText($p->name);
             $pNameWords = explode(' ', $pNameNorm);
-
-            $pSkuNorm = preg_replace('/[^a-z0-9 ]+/', ' ', strtolower($p->sku ?? ''));
-            $pCatNorm = preg_replace('/[^a-z0-9 ]+/', ' ', strtolower($p->category ?? ''));
-            $pCatWords = explode(' ', trim($pCatNorm ?? ''));
+            $pSkuWords = explode(' ', $this->normalizeSearchText($p->sku ?? ''));
+            $pCatWords = explode(' ', $this->normalizeSearchText($p->category ?? ''));
 
             $score = 0;
-            $matchedTokensCount = 0;
+            $matchedTokens = [];
+            $strongTokens = [];
 
-            // 1. Exact / Substring phrase match bonus
-            if (!empty($pNameNorm) && str_contains($pNameNorm, $cleanMsg)) {
+            // 1. Exact / whole-phrase match bonus
+            if ($pNameNorm !== '' && str_contains(" {$pNameNorm} ", " {$cleanMsg} ")) {
                 $score += 150;
-            } elseif (!empty($cleanMsg) && str_contains($cleanMsg, $pNameNorm)) {
+            } elseif ($pNameNorm !== '' && str_contains(" {$cleanMsg} ", " {$pNameNorm} ")) {
                 $score += 100;
             }
 
             // 2. Token-by-token matching
             foreach ($queryTokens as $qToken) {
-                $qLen = strlen($qToken);
-                $tokenMatched = false;
+                $qToken = (string) $qToken;
                 $tokenScore = 0;
 
                 // Match against Product Name words
                 foreach ($pNameWords as $pWord) {
-                    if (empty($pWord)) continue;
-
-                    if ($qToken === $pWord) {
-                        // Exact word match in product name
-                        $tokenScore = max($tokenScore, 40);
-                        $tokenMatched = true;
-                        break;
-                    } elseif (str_starts_with($pWord, $qToken) || str_starts_with($qToken, $pWord)) {
-                        // Prefix match
-                        $tokenScore = max($tokenScore, 28);
-                        $tokenMatched = true;
-                    } elseif ($qLen >= 4) {
-                        // Typo tolerance: Levenshtein distance <= 1 for 4-6 char words, <= 2 for 7+ chars
-                        $dist = levenshtein($qToken, $pWord);
-                        $maxDist = ($qLen >= 7) ? 2 : 1;
-                        if ($dist <= $maxDist) {
-                            $tokenScore = max($tokenScore, 26);
-                            $tokenMatched = true;
-                        }
-                    }
+                    $tokenScore = max($tokenScore, $this->wordMatchScore($qToken, $pWord));
                 }
+                $isStrong = $tokenScore >= 26;
 
                 // Match against SKU if not matched in name
-                if (!$tokenMatched && !empty($pSkuNorm)) {
-                    if (str_contains($pSkuNorm, $qToken)) {
-                        $tokenScore = max($tokenScore, 20);
-                        $tokenMatched = true;
-                    }
-                }
-
-                // Match against Category if not matched in name or SKU
-                if (!$tokenMatched && !empty($pCatWords)) {
-                    foreach ($pCatWords as $cWord) {
-                        if (empty($cWord)) continue;
-                        if ($qToken === $cWord || str_starts_with($cWord, $qToken)) {
-                            $tokenScore = max($tokenScore, 14);
-                            $tokenMatched = true;
+                if (!$isStrong) {
+                    foreach ($pSkuWords as $sWord) {
+                        if ($sWord !== '' && ($qToken === $sWord || (strlen($qToken) >= 4 && str_contains($sWord, $qToken)))) {
+                            $tokenScore = max($tokenScore, 20);
+                            $isStrong = true;
                             break;
                         }
                     }
                 }
 
-                if ($tokenMatched) {
-                    $matchedTokensCount++;
+                // Match against Category if not matched in name or SKU
+                if (!$isStrong) {
+                    foreach ($pCatWords as $cWord) {
+                        if ($this->wordMatchScore($qToken, $cWord) >= 26) {
+                            $tokenScore = max($tokenScore, 14);
+                            $isStrong = true;
+                            break;
+                        }
+                    }
+                }
+
+                if ($tokenScore > 0) {
+                    $matchedTokens[] = $qToken;
                     $score += $tokenScore;
+                }
+                if ($isStrong) {
+                    $strongTokens[] = $qToken;
                 }
             }
 
-            if ($matchedTokensCount > 0) {
-                // Completeness multiplier: reward items that match all or more of the search terms
-                $coverage = $matchedTokensCount / $totalTokens;
-                $score = $score * (0.4 + 0.6 * $coverage);
+            if (count($matchedTokens) === 0) {
+                continue;
+            }
 
-                if ($matchedTokensCount === $totalTokens) {
-                    $score += 90; // All requested keywords are present!
-                }
+            // Completeness multiplier: reward items that match all or more of the search terms
+            $coverage = count($matchedTokens) / $totalTokens;
+            $score = $score * (0.4 + 0.6 * $coverage);
 
-                // In-stock preference
-                if ($p->quantity > 0) {
-                    $score += 3;
-                }
+            $isExact = count(array_diff($requiredTokens, $strongTokens)) === 0;
+            if ($isExact) {
+                $score += 90; // All requested keywords are present!
+            }
 
-                if ($score >= 18) {
-                    $scored[] = [
-                        'product' => $p,
-                        'score' => $score,
-                        'matched_count' => $matchedTokensCount,
-                    ];
-                }
+            // In-stock preference
+            if ($p->quantity > 0) {
+                $score += 3;
+            }
+
+            if ($score >= 18) {
+                $scored[] = [
+                    'product' => $p,
+                    'score' => $score,
+                    'matched_count' => count($matchedTokens),
+                    'is_exact' => $isExact,
+                ];
             }
         }
 
@@ -545,6 +682,10 @@ class ChatController extends Controller
             return $b['product']->quantity - $a['product']->quantity;
         });
 
-        return array_map(fn($item) => $item['product'], $scored);
+        foreach ($scored as $item) {
+            $result[$item['is_exact'] ? 'exact' : 'similar'][] = $item['product'];
+        }
+
+        return $result;
     }
 }

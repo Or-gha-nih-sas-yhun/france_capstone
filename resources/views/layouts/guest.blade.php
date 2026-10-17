@@ -128,8 +128,8 @@
                     <a href="{{ route('home') }}#products" class="guest-link">Browse</a>
                     <a href="{{ route('home') }}#inquire" class="guest-link">Contact</a>
                     @if(Auth::check())
-                        <a href="{{ route('profile.index') }}" class="guest-link" style="font-weight: bold; color: #4f46e5;">👤 My Account</a>
-                        <a href="{{ route('profile.notifications') }}" class="guest-link">🔔 Alerts</a>
+                        <a href="{{ route('profile.index') }}" class="guest-link" style="font-weight: bold; color: #4f46e5;">Profile</a>
+                        <a href="{{ route('profile.notifications') }}" class="guest-link">Notifications</a>
                         <a href="{{ route('logout') }}" data-logout-confirm class="guest-link" style="color: #ef4444;">Logout</a>
                     @else
                         <a href="{{ route('login') }}" class="guest-link btn-guest-login-outline" style="font-weight: bold; color: #4f46e5 !important; border: 1px solid #4f46e5; padding: 6px 14px; border-radius: 6px; margin-right: 4px;">🔑 Log In</a>

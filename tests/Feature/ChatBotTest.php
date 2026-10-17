@@ -315,6 +315,55 @@ class ChatBotTest extends TestCase
     }
 
     /** @test */
+    public function check_products_lists_the_most_trending_products_first()
+    {
+        $cashier = User::create([
+            'name' => 'Store Admin',
+            'email' => 'store.admin@example.com',
+            'password' => Hash::make('password123'),
+            'role' => 'admin',
+        ]);
+
+        $make = fn (string $name, int $qty) => \App\Models\Product::create([
+            'sku' => strtoupper(str_replace(' ', '-', $name)),
+            'name' => $name,
+            'category' => 'School Supplies',
+            'price' => 10.00,
+            'quantity' => $qty,
+        ]);
+        $ballpen = $make('Blue Ballpen', 80);
+        $notebook = $make('Spiral Notebook', 40);
+        $pencil = $make('Faber-Castell 2B Pencil', 50);
+        $make('Glue Stick', 30);
+        $soldOut = $make('Yellow Pad Paper', 0);
+        $make('Ruler 12 Inch', 25);
+
+        $sell = function (\App\Models\Product $product, int $qty, int $daysAgo) use ($cashier) {
+            $sale = \App\Models\Sale::create(['user_id' => $cashier->id, 'total' => $qty * 10]);
+            $sale->forceFill(['created_at' => now()->subDays($daysAgo)])->save();
+            \App\Models\SaleItem::create(['sale_id' => $sale->id, 'product_id' => $product->id, 'qty' => $qty, 'price' => 10]);
+        };
+        $sell($notebook, 12, 2);
+        $sell($ballpen, 5, 1);
+        $sell($ballpen, 4, 10);   // 9 recent in total
+        $sell($pencil, 200, 90);  // big seller, but not recently
+        $sell($soldOut, 500, 1);  // out of stock, so never listed
+
+        foreach (['Check Products 🛍️', "What's trending?", 'Hi! What are your best sellers?'] as $question) {
+            $response = $this->postJson(route('chat.bot-response'), ['message' => $question]);
+
+            $reply = $response->json('reply');
+            $this->assertStringContainsString('🔥 Trending Products', $reply, $question);
+            $this->assertStringContainsString('Spiral Notebook — ₱10.00 (12 sold in the last 30 days)', $reply, $question);
+            $this->assertSame(
+                ['Spiral Notebook', 'Blue Ballpen', 'Faber-Castell 2B Pencil', 'Ruler 12 Inch'],
+                array_column($response->json('products'), 'name'),
+                $question
+            );
+        }
+    }
+
+    /** @test */
     public function location_reply_includes_a_google_maps_link_to_the_store()
     {
         $response = $this->postJson(route('chat.bot-response'), ['message' => 'Where is your store located?']);

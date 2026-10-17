@@ -17,6 +17,9 @@ class ChatController extends Controller
     /** Number of customer messages after which the Messenger handoff is offered. */
     public const HANDOFF_AFTER_MESSAGES = 3;
 
+    /** Sales window, in days, used to rank trending products. */
+    public const TRENDING_DAYS = 30;
+
     public const STORE_ADDRESS = 'Stall No. 18, Bantayan Public Market, Suba, Bantayan, Cebu 6052';
 
     /**
@@ -293,9 +296,13 @@ class ChatController extends Controller
             || str_contains($lowerMsg, 'eraser') || str_contains($lowerMsg, 'pencil') || str_contains($lowerMsg, 'faber')
             || preg_match('/\b(do (you|u) (still )?(have|sell|carry|offer)|(have|got) any|is there|are there|looking for|searching for|can i (get|buy|order)|i (need|want))\b/', $lowerMsg) === 1;
 
+        // "What's trending?", "best sellers", "what do you recommend?"
+        $asksTrending = preg_match('/\b(trend(ing|s)?|popular|best ?sell(er|ers|ing)?|top ?sell(er|ers|ing)?|most (sold|bought|purchased)|hot items?|recommend(ed|ation|ations)?)\b/', $lowerMsg) === 1;
+        $hasProductIntent = $hasProductIntent || $asksTrending;
+
         // Greeting intents
         if (preg_match('/\b(hi|hello|hey|greetings|good morning|good afternoon|good evening|hello bot|help|start)\b/', $lowerMsg)
-            && !($hasProductIntent && !empty($queryTokens))) {
+            && !($hasProductIntent && (!empty($queryTokens) || $asksTrending))) {
             return [
                 'reply' => "Hello! 👋 Welcome to Mera's Merchandise support assistant. How can I help you today? You can ask me about our products, store hours, location, or payment options.",
                 'suggestions' => $defaultSuggestions,
@@ -387,38 +394,62 @@ class ChatController extends Controller
         }
 
         if ($hasProductIntent) {
-            // Featured items if general product intent without specific match
-            $featured = Product::where('quantity', '>', 0)->limit(4)->get();
-            $featuredMsg = "🛍️ Featured Store Products:\n";
-            $productItems = [];
-            foreach ($featured as $f) {
-                $unit = $f->unit ?: 'pcs';
-                $status = "🟢 In Stock (" . $f->quantity . " " . $unit . " left)";
-                $featuredMsg .= "• {$f->name} — ₱" . number_format($f->price, 2) . "\n";
-                $productItems[] = [
-                    'id' => $f->id,
-                    'name' => $f->name,
-                    'price' => '₱' . number_format($f->price, 2),
-                    'quantity' => $f->quantity,
-                    'unit' => $unit,
-                    'status' => $status,
-                    'category' => $f->category ?? 'Merchandise',
-                    'url' => route('home') . '#product-' . $f->id,
-                ];
-            }
-            $featuredMsg .= "\n👉 Click on any product below to view it, or ask about a specific item by name!";
-
-            return [
-                'reply' => $featuredMsg,
-                'suggestions' => ["Store Hours 🕒", "Location 📍", "Payment Methods 💳"],
-                'products' => $productItems,
-            ];
+            return $this->trendingProductsResponse();
         }
 
         // Default fallback
         return [
             'reply' => "🤖 Support Assistant:\nThank you for your message! If you need specific assistance, you can ask about our products, store hours, location, or payment options.\n\nOur staff has also been notified and will be happy to assist you!",
             'suggestions' => $defaultSuggestions,
+        ];
+    }
+
+    /**
+     * General product questions ("Check Products") list what is selling best right now:
+     * in-stock items ranked by units sold in the last TRENDING_DAYS days, then by
+     * all-time sales, with the newest stock filling any remaining spots.
+     */
+    private function trendingProductsResponse(): array
+    {
+        $since = now()->subDays(self::TRENDING_DAYS);
+
+        $trending = Product::where('quantity', '>', 0)
+            ->withSum(['saleItems as recent_sold' => fn ($q) => $q->whereHas('sale', fn ($s) => $s->where('created_at', '>=', $since))], 'qty')
+            ->withSum('saleItems as total_sold', 'qty')
+            ->orderByDesc('recent_sold')
+            ->orderByDesc('total_sold')
+            ->orderByDesc('id')
+            ->limit(4)
+            ->get();
+
+        $suggestions = ["Store Hours 🕒", "Location 📍", "Payment Methods 💳"];
+
+        if ($trending->isEmpty()) {
+            return [
+                'reply' => "🛍️ Our Products:\nWe're sorry, but our products are currently out of stock. Please check back with us soon, or contact our team on Messenger for restocking updates.",
+                'suggestions' => $suggestions,
+                'products' => [],
+            ];
+        }
+
+        $hasSales = $trending->contains(fn ($p) => $p->total_sold > 0);
+        $trendingMsg = $hasSales ? "🔥 Trending Products:\n" : "🛍️ Featured Store Products:\n";
+        $productItems = [];
+
+        foreach ($trending as $p) {
+            $trendingMsg .= "• {$p->name} — ₱" . number_format($p->price, 2);
+            if ($p->recent_sold > 0) {
+                $trendingMsg .= " (" . (int) $p->recent_sold . " sold in the last " . self::TRENDING_DAYS . " days)";
+            }
+            $trendingMsg .= "\n";
+            $productItems[] = $this->productCard($p);
+        }
+        $trendingMsg .= "\n👉 Click on any product below to view it, or ask about a specific item by name!";
+
+        return [
+            'reply' => $trendingMsg,
+            'suggestions' => $suggestions,
+            'products' => $productItems,
         ];
     }
 
@@ -502,6 +533,10 @@ class ChatController extends Controller
             'other', 'more', 'one', 'ones', 'kind', 'kinds', 'sort', 'if', 'but', 'from', 'by', 'as',
             'bye', 'goodbye', 'welcome', 'nice', 'great', 'cool', 'awesome', 'wow', 'haha', 'lol', 'hmm',
             'sure', 'alright', 'noted', 'again', 'tomorrow', 'tonight', 'yesterday', 'bot', 'chatbot',
+            // Trending / best-seller words
+            'trend', 'trends', 'trending', 'popular', 'best', 'top', 'seller', 'sellers', 'bestseller',
+            'bestsellers', 'most', 'bought', 'purchased', 'hot', 'recommend', 'recommended',
+            'recommendation', 'recommendations',
             // Pronouns and helper verbs
             'ur', 'your', 'yours', 'we', 'us', 'our', 'my', 'it', 'its', 'im', 'this', 'that', 'these', 'those',
             'here', 'be', 'been', 'was', 'were', 'does', 'did', 'has', 'had', 'got', 'will', 'could', 'should',

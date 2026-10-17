@@ -17,6 +17,11 @@ class Product extends Model
         'quantity',
     ];
 
+    public function saleItems()
+    {
+        return $this->hasMany(SaleItem::class);
+    }
+
     /**
      * A product is sold at wholesale only once both a bulk price and the
      * quantity that unlocks it have been configured.

@@ -215,6 +215,31 @@ class ChatBotTest extends TestCase
     }
 
     /** @test */
+    public function bot_states_a_product_is_not_available_when_the_customer_types_only_the_item_name()
+    {
+        $this->seedSchoolSupplies();
+
+        foreach (['sock' => '"Sock"', 'Shoes?' => '"Shoes"', 'rubber shoes' => '"Rubber Shoes"'] as $question => $requested) {
+            $response = $this->postJson(route('chat.bot-response'), ['message' => $question]);
+
+            $reply = $response->json('reply');
+            $this->assertStringContainsString("{$requested} is currently not available in our product catalog", $reply, $question);
+            $this->assertStringNotContainsString('Thank you for your message', $reply, $question);
+            $this->assertSame([], $response->json('products'), $question);
+        }
+
+        // A bare name of an item the store carries still returns that item
+        $response = $this->postJson(route('chat.bot-response'), ['message' => 'ballpen']);
+        $this->assertSame(['Blue Ballpen'], array_column($response->json('products'), 'name'));
+
+        // Short courtesy messages are not mistaken for product names
+        foreach (['thank you', 'ok bye', 'Store Hours 🕒'] as $message) {
+            $reply = $this->postJson(route('chat.bot-response'), ['message' => $message])->json('reply');
+            $this->assertStringNotContainsString('not available', $reply, $message);
+        }
+    }
+
+    /** @test */
     public function bot_does_not_pass_off_a_look_alike_word_as_the_requested_product()
     {
         $this->seedSchoolSupplies();

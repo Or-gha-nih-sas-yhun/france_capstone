@@ -252,7 +252,11 @@ class ChatController extends Controller
         // Product inquiry signals are read up front so "Hi, do you have laptops?" is
         // answered as a product question instead of a plain greeting.
         $queryTokens = $this->extractQueryTokens($lowerMsg);
-        $hasProductIntent = str_contains($lowerMsg, 'product') || str_contains($lowerMsg, 'item') || str_contains($lowerMsg, 'price')
+
+        // A message that is just an item name ("socks", "rubber shoes") is a product lookup
+        $isItemLookup = !empty($queryTokens) && count(explode(' ', $this->normalizeSearchText($lowerMsg))) <= 4;
+
+        $hasProductIntent = $isItemLookup || str_contains($lowerMsg, 'product') || str_contains($lowerMsg, 'item') || str_contains($lowerMsg, 'price')
             || str_contains($lowerMsg, 'stock') || str_contains($lowerMsg, 'quantity') || str_contains($lowerMsg, 'qty')
             || str_contains($lowerMsg, 'how much') || str_contains($lowerMsg, 'how many') || str_contains($lowerMsg, 'cost')
             || str_contains($lowerMsg, 'available') || str_contains($lowerMsg, 'availability') || str_contains($lowerMsg, 'left')
@@ -468,6 +472,8 @@ class ChatController extends Controller
             'ok', 'okay', 'yes', 'yeah', 'no', 'not', 'just', 'only', 'also', 'too', 'so', 'very', 'really',
             'still', 'yet', 'now', 'today', 'currently', 'right', 'some', 'anything', 'something', 'else',
             'other', 'more', 'one', 'ones', 'kind', 'kinds', 'sort', 'if', 'but', 'from', 'by', 'as',
+            'bye', 'goodbye', 'welcome', 'nice', 'great', 'cool', 'awesome', 'wow', 'haha', 'lol', 'hmm',
+            'sure', 'alright', 'noted', 'again', 'tomorrow', 'tonight', 'yesterday', 'bot', 'chatbot',
             // Pronouns and helper verbs
             'ur', 'your', 'yours', 'we', 'us', 'our', 'my', 'it', 'its', 'im', 'this', 'that', 'these', 'those',
             'here', 'be', 'been', 'was', 'were', 'does', 'did', 'has', 'had', 'got', 'will', 'could', 'should',
